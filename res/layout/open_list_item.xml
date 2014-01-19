@@ -1,6 +1,6 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="48dp">
+    android:layout_height="@dimen/button_touchable">
     <TextView android:id="@+id/label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
