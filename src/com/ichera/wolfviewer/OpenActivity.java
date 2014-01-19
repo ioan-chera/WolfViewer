@@ -162,6 +162,9 @@ public class OpenActivity extends ListActivity
 					}
 				});
 				
+				if(wl6files == null || subdirs == null)
+					return;
+				
 				if(wl6files.length == Global.s_wolfFileNames.length)
 					relevantFiles.add(file);
 			
@@ -181,6 +184,12 @@ public class OpenActivity extends ListActivity
 		@Override
 		protected void onPostExecute (ArrayList<File> result)
 		{
+			if(result == null || result.size() == 0)
+			{
+				m_progressText.setText(getString(R.string.message_no_wolf3d_dir_found));
+				m_progressWheel.setVisibility(View.GONE);
+				return;
+			}
 			m_adapter = new OpenAdapter(mm_activity, result.toArray(new 
 					File[result.size()]));
 			m_progressWheel.setVisibility(View.GONE);
