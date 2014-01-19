@@ -8,6 +8,18 @@ import android.content.Context;
 
 public class Global 
 {
+	public static final String[] s_wolfFileNames =
+		{
+		"AUDIOHED.WL6",
+		"AUDIOT.WL6",
+		"GAMEMAPS.WL6",
+		"MAPHEAD.WL6",
+		"VGADICT.WL6",
+		"VGAGRAPH.WL6",
+		"VGAHEAD.WL6",
+		"VSWAP.WL6",
+		};
+	
 	public static float 	s_scale;
 	
 	private static boolean 	s_initialized;

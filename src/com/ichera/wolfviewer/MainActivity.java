@@ -3,7 +3,6 @@ package com.ichera.wolfviewer;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -41,8 +40,6 @@ public class MainActivity extends Activity
     	case R.id.action_open:
     	{
     		Intent intent = new Intent(this, OpenActivity.class);
-    		intent.putExtra(OpenActivity.KEY_PATH, Environment
-    				.getExternalStorageDirectory().getPath());
     		startActivity(intent);
     	}
     		break;

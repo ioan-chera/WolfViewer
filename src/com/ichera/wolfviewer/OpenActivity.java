@@ -1,12 +1,14 @@
 package com.ichera.wolfviewer;
 
 import java.io.File;
-import java.util.Stack;
+import java.io.FileFilter;
+import java.io.FilenameFilter;
+import java.util.ArrayList;
 
 import android.app.ListActivity;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,12 +24,8 @@ import android.widget.TextView;
  */
 public class OpenActivity extends ListActivity 
 {
-	public static final String KEY_PATH = "curPath";
-	
 	private LayoutInflater	m_inflater;
 	private OpenAdapter		m_adapter;
-	private Stack<File>		m_history;
-	private File			m_currentPath;
 	
 	/**
 	 * Adapter for this list
@@ -95,19 +93,46 @@ public class OpenActivity extends ListActivity
 			else
 				item = convertView;
 			
-			File file = mm_fileList[position];
-			String text;
-			
-			if(file.isDirectory())
-				text = "<" + file.getName() + ">";
-			else
-				text = file.getName();
-			
-			((Holder)item.getTag()).tv.setText(text);
+			((Holder)item.getTag()).tv.setText(mm_fileList[position].getPath());
 			
 			return item;
 		}
 		
+	}
+	
+	private void lookForRelevantFiles(File file, ArrayList<File> relevantFiles)
+	{
+		
+		if(file.isDirectory())
+		{
+			File[] subdirs = file.listFiles(new FileFilter() 
+			{
+				@Override
+				public boolean accept(File pathname) 
+				{
+					return pathname.isDirectory();
+				}
+			});
+			File[] wl6files = file.listFiles(new FilenameFilter() 
+			{
+				@Override
+				public boolean accept(File dir, String filename) 
+				{
+					for(String name : Global.s_wolfFileNames)
+					{
+						if(name.compareToIgnoreCase(filename) == 0)
+							return true;
+					}
+					return false;
+				}
+			});
+			
+			if(wl6files.length == Global.s_wolfFileNames.length)
+				relevantFiles.add(file);
+			else
+				for(File subdir : subdirs)
+					lookForRelevantFiles(subdir, relevantFiles);
+		}
 	}
 	
 	@Override
@@ -118,57 +143,24 @@ public class OpenActivity extends ListActivity
 		m_inflater = (LayoutInflater)getSystemService(Context
 				.LAYOUT_INFLATER_SERVICE);
 		
-		// Load path location
-		Intent intent = getIntent();
-		Bundle extras = intent.getExtras();
-		String currentPathString = extras.getString(KEY_PATH);
-		
-		m_history = new Stack<File>();
-		
-		updateList(new File(currentPathString));
+		updateList();
 	}
 	
 	/**
 	 * Updates the file list
 	 */
-	private void updateList(File currentPath, boolean addToHistory)
+	private void updateList()
 	{
-		if(currentPath.isDirectory() && currentPath.exists())
-		{
-			if(m_currentPath != null && addToHistory)
-				m_history.push(m_currentPath);
-			m_currentPath = currentPath;
-			m_adapter = new OpenAdapter(this, m_currentPath.listFiles());
-			setListAdapter(m_adapter);
-		}
-	}
-	private void updateList(File currentPath)
-	{
-		updateList(currentPath, true);
+		ArrayList<File> dirList = new ArrayList<File>();
+		lookForRelevantFiles(Environment.getExternalStorageDirectory(),	
+				dirList);
+		m_adapter = new OpenAdapter(this, dirList.toArray(new File[dirList
+		                                                           .size()]));
+		setListAdapter(m_adapter);
 	}
 	
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id)
 	{
-		File target = (File)m_adapter.getItem(position);
-		
-		if(target.isDirectory())
-		{
-			updateList(target);
-		}
-		else
-		{
-			VSwapContainer vswap = new VSwapContainer();
-			vswap.loadFile(target);
-		}
-	}
-	
-	@Override
-	public void onBackPressed()
-	{
-		if(m_history.size() == 0)
-			super.onBackPressed();
-		else
-			updateList(m_history.pop(), false);
-	}
+	}	
 }
