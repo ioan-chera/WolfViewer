@@ -33,6 +33,40 @@ public class OpenActivity extends ListActivity
 	private boolean				m_dataLoaded;
 	private DirFindAsyncTask	m_dirFindAsyncTask;
 	
+	
+	@Override
+	protected void onCreate (Bundle savedInstanceState)
+	{
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_open);
+		
+		m_inflater = (LayoutInflater)getSystemService(Context
+				.LAYOUT_INFLATER_SERVICE);
+		
+		m_progressWheel = (ProgressBar)findViewById(R.id.progress_wheel);
+		m_progressText = (TextView)findViewById(R.id.progress_text);
+		
+		m_dirFindAsyncTask = new DirFindAsyncTask(this);
+		
+		if(!m_dataLoaded)
+			updateList();
+	}
+	
+	@Override
+	protected void onSaveInstanceState (Bundle outState)
+	{
+		m_dirFindAsyncTask.cancel(true);
+		super.onSaveInstanceState(outState);
+	}
+	
+	/**
+	 * Updates the file list
+	 */
+	private void updateList()
+	{
+		m_dirFindAsyncTask.execute(Environment.getExternalStorageDirectory());
+	}
+	
 	/**
 	 * Adapter for this list
 	 * @author ioan
@@ -106,6 +140,11 @@ public class OpenActivity extends ListActivity
 		
 	}
 	
+	/**
+	 * Async task for finding directories
+	 * @author ioan
+	 *
+	 */
 	class DirFindAsyncTask extends AsyncTask<File, String, ArrayList<File>>
 	{
 		OpenActivity mm_activity;
@@ -205,39 +244,5 @@ public class OpenActivity extends ListActivity
 		{
 			Log.i("T", "Task cancelled");
 		}
-	}
-	
-	
-	@Override
-	protected void onCreate (Bundle savedInstanceState)
-	{
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_open);
-		
-		m_inflater = (LayoutInflater)getSystemService(Context
-				.LAYOUT_INFLATER_SERVICE);
-		
-		m_progressWheel = (ProgressBar)findViewById(R.id.progress_wheel);
-		m_progressText = (TextView)findViewById(R.id.progress_text);
-		
-		m_dirFindAsyncTask = new DirFindAsyncTask(this);
-		
-		if(!m_dataLoaded)
-			updateList();
-	}
-	
-	@Override
-	protected void onSaveInstanceState (Bundle outState)
-	{
-		m_dirFindAsyncTask.cancel(true);
-		super.onSaveInstanceState(outState);
-	}
-	
-	/**
-	 * Updates the file list
-	 */
-	private void updateList()
-	{
-		m_dirFindAsyncTask.execute(Environment.getExternalStorageDirectory());
 	}
 }
