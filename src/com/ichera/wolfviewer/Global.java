@@ -4,10 +4,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import android.content.Context;
+import android.app.Activity;
+import android.util.DisplayMetrics;
 
 public class Global 
 {
+		
 	public static final String[] s_wolfFileNames =
 		{
 		"AUDIOHED.WL6",
@@ -21,6 +23,7 @@ public class Global
 		};
 	
 	public static float 	s_scale;
+	public static DisplayMetrics	s_metrics;
 	
 	private static boolean 	s_initialized;
 	
@@ -28,11 +31,14 @@ public class Global
 	 * Initializes the global vars
 	 * @param context the relevant context
 	 */
-	public static void initialize(Context context)
+	public static void initialize(Activity context)
 	{
 		if(s_initialized)
 			return;
 		s_initialized = true;
+		
+		s_metrics = new DisplayMetrics();
+		context.getWindowManager().getDefaultDisplay().getMetrics(s_metrics);
 		
 		s_scale = context.getResources().getDisplayMetrics().density;
 	}

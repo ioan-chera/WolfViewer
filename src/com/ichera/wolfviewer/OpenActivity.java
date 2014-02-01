@@ -163,11 +163,6 @@ AdapterView.OnItemClickListener, View.OnClickListener
 			setFileList(dir, true);
 		}
 		
-		public File[] getFileList()
-		{
-			return m_fileList;
-		}
-		
 		/**
 		 * Private method
 		 * @param dir
