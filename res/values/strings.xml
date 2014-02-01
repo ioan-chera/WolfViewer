@@ -9,5 +9,7 @@
     <string name="message_no_wolf3d_dir_found">No Wolfenstein 3D directories found in your device.</string>
     
     <string name="hello_world">Hello world!</string>
+    
+    <string name="open_folder">Open this folder</string>
 
 </resources>
