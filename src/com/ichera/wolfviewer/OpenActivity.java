@@ -6,12 +6,12 @@ import java.util.Arrays;
 import java.util.Stack;
 
 import android.app.AlertDialog;
-import android.app.ListActivity;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Parcelable;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +19,7 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 
 /**
@@ -26,7 +27,7 @@ import android.widget.TextView;
  * @author ioan
  *
  */
-public class OpenActivity extends ListActivity implements 
+public class OpenActivity extends ActionBarActivity implements 
 AdapterView.OnItemClickListener, View.OnClickListener
 {
 	public static final String	EXTRA_CURRENT_PATH = "currentPath";
@@ -38,6 +39,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 	private Stack<FolderState>	m_folderStack;
 	private TextView			m_currentPathLabel;
 	private Button				m_openButton;
+	private ListView			m_listView;
 	
 	private class FolderState
 	{
@@ -52,6 +54,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 		setContentView(R.layout.activity_open);
 		m_currentPathLabel = (TextView)findViewById(R.id.current_folder);
 		m_openButton = (Button)findViewById(R.id.open_button);
+		m_listView = (ListView)findViewById(R.id.list);
 		
 		m_openButton.setOnClickListener(this);
 		
@@ -98,8 +101,8 @@ AdapterView.OnItemClickListener, View.OnClickListener
 		
 		
 		m_adapter = new OpenAdapter(m_currentPath);
-		getListView().setAdapter(m_adapter);
-		getListView().setOnItemClickListener(this);
+		m_listView.setAdapter(m_adapter);
+		m_listView.setOnItemClickListener(this);
 	}
 	
 	@Override
@@ -130,7 +133,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 			FolderState fs = m_folderStack.pop();
 			m_currentPath = fs.path;
 			m_adapter.setFileList(m_currentPath);
-			getListView().onRestoreInstanceState(fs.listInstanceState);
+			m_listView.onRestoreInstanceState(fs.listInstanceState);
 		}
 		else
 			super.onBackPressed();
@@ -208,7 +211,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 				item = new TextView(OpenActivity.this);
 				AbsListView.LayoutParams alvlp = new AbsListView.LayoutParams(
 						AbsListView.LayoutParams.MATCH_PARENT, (int)(48 * Global
-								.s_scale));
+								.getScale()));
 				item.setLayoutParams(alvlp);
 				item.setGravity(Gravity.CENTER_VERTICAL);
 			}
@@ -277,7 +280,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 			if(m_folderStack == null)
 				m_folderStack = new Stack<FolderState>();
 			FolderState fs = new FolderState();
-			fs.listInstanceState = getListView().onSaveInstanceState();
+			fs.listInstanceState = m_listView.onSaveInstanceState();
 			fs.path = m_currentPath;
 			m_folderStack.push(fs);
 			m_currentPath = dir;
@@ -296,7 +299,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 				@Override
 				public boolean accept(File dir, String filename) 
 				{
-					for(String name : Global.s_wolfFileNames)
+					for(String name : Global.getWolfFileNames())
 					{
 						if(name.compareToIgnoreCase(filename) == 0)
 							return true;
@@ -307,7 +310,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 			if(wl6files == null)
 				invalid = true;
 			
-			if(wl6files.length != Global.s_wolfFileNames.length)
+			if(wl6files.length != Global.getWolfFileNames().length)
 				invalid = true;
 			
 			if(invalid)

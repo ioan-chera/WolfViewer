@@ -5,12 +5,12 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import android.app.Activity;
-import android.util.DisplayMetrics;
+import android.util.Log;
 
 public class Global 
 {
-		
-	public static final String[] s_wolfFileNames =
+	private static final String TAG = "Global";
+	private static final String[] s_wolfFileNames =
 		{
 		"AUDIOHED.WL6",
 		"AUDIOT.WL6",
@@ -22,8 +22,7 @@ public class Global
 		"VSWAP.WL6",
 		};
 	
-	public static float 	s_scale;
-	public static DisplayMetrics	s_metrics;
+	private static float 	s_scale;
 	
 	private static boolean 	s_initialized;
 	
@@ -35,19 +34,22 @@ public class Global
 	{
 		if(s_initialized)
 			return;
+		Log.i(TAG, "Initializing...");
 		s_initialized = true;
-		
-		s_metrics = new DisplayMetrics();
-		context.getWindowManager().getDefaultDisplay().getMetrics(s_metrics);
-		
+				
 		s_scale = context.getResources().getDisplayMetrics().density;
 	}
 	
-	private static int byteToUnsigned(byte b)
+	public static String[] getWolfFileNames()
 	{
-		return (int)b & 0xff;
+		return s_wolfFileNames;
 	}
 	
+	public static float getScale()
+	{
+		return s_scale;
+	}
+		
 	/**
 	 * Reads an unsigned short
 	 * @param fis file input stream
@@ -58,13 +60,13 @@ public class Global
 	{
 		byte[] read = new byte[2];
 		fis.read(read, 0, 2);
-		return byteToUnsigned(read[0]) + (byteToUnsigned(read[1]) << 8); 
+		return (read[0] & 0xff) + ((read[1] & 0xff) << 8); 
 	}
 	public static int readUInt16(RandomAccessFile raf) throws IOException
 	{
 		byte[] read = new byte[2];
 		raf.read(read, 0, 2);
-		return byteToUnsigned(read[0]) + (byteToUnsigned(read[1]) << 8); 
+		return (read[0] & 0xff) + ((read[1] & 0xff) << 8); 
 	}
 	
 	/**
@@ -77,16 +79,16 @@ public class Global
 	{
 		byte[] read = new byte[4];
 		fis.read(read, 0, 4);
-		return byteToUnsigned(read[0]) + (byteToUnsigned(read[1]) << 8) 
-				+ (byteToUnsigned(read[2]) << 16) 
-				+ (byteToUnsigned(read[3]) << 24);
+		return (read[0] & 0xff) + ((read[1] & 0xff) << 8) 
+				+ ((read[2] & 0xff) << 16) 
+				+ ((read[3] & 0xff) << 24);
 	}
 	public static int readInt32(RandomAccessFile raf) throws IOException
 	{
 		byte[] read = new byte[4];
 		raf.read(read, 0, 4);
-		return byteToUnsigned(read[0]) + (byteToUnsigned(read[1]) << 8) 
-				+ (byteToUnsigned(read[2]) << 16) 
-				+ (byteToUnsigned(read[3]) << 24);
+		return (read[0] & 0xff) + ((read[1] & 0xff) << 8) 
+				+ ((read[2] & 0xff) << 16) 
+				+ ((read[3] & 0xff) << 24);
 	}
 }

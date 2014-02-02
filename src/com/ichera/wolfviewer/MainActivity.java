@@ -2,15 +2,14 @@ package com.ichera.wolfviewer;
 
 import java.io.File;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -20,7 +19,7 @@ import android.widget.ImageView;
  * @author ioan
  *
  */
-public class MainActivity extends Activity 
+public class MainActivity extends ActionBarActivity 
 {
 	private static final int REQUEST_OPEN_WOLF = 1;
 	private static final String EXTRA_CURRENT_PATH = "currentPath";
@@ -42,6 +41,7 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         m_gridView = (GridView)findViewById(R.id.grid);
+        
         
         if(savedInstanceState != null)
         {
@@ -122,7 +122,7 @@ public class MainActivity extends Activity
 		@Override
 		public int getCount() 
 		{
-			return m_vswap != null ? m_vswap.getSpriteStart() - 1 : 0;
+			return m_vswap != null ? m_vswap.getSpriteStart() : 0;
 		}
 
 		@Override
@@ -144,15 +144,15 @@ public class MainActivity extends Activity
 			if(convertView == null)
 			{
 				iv = new ImageView(MainActivity.this);
-				iv.setLayoutParams(new AbsListView.LayoutParams(
-						(int)(64 * Global.s_scale), (int)(64 * Global.s_scale)));
+//				iv.setLayoutParams(new AbsListView.LayoutParams(
+//						(int)(64 * Global.getScale()), (int)(64 * Global.getScale())));
 				
 			}
 			else
 				iv = (ImageView)convertView;
 			
 			Bitmap bmp = Bitmap.createBitmap( 
-					Palette.getColors(m_vswap.getPage(position)), 64, 64, 
+					Palette.getColorsTransposed(m_vswap.getPage(position)), 64, 64, 
 					Bitmap.Config.ARGB_8888);
 			iv.setImageBitmap(bmp);
 			return iv;

@@ -17,6 +17,14 @@ public class Palette
 		return ret;
 	}
 	
+	public static int[] getColorsTransposed(byte[] indexed)
+	{
+		int[] ret = new int[indexed.length];
+		for(int i = 0; i < ret.length; ++i)
+			ret[64 * (i % 64) + i / 64] = WL6[indexed[i] & 0xff];
+		return ret;
+	}
+	
 	public static final int[] WL6 = new int[]{
 		inflateRGB(  0,  0,  0),inflateRGB(  0,  0, 42),inflateRGB(  0, 42,  0),inflateRGB(  0, 42, 42),inflateRGB( 42,  0,  0),
 		inflateRGB( 42,  0, 42),inflateRGB( 42, 21,  0),inflateRGB( 42, 42, 42),inflateRGB( 21, 21, 21),inflateRGB( 21, 21, 63),

@@ -1,4 +1,5 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:yourapp="http://schemas.android.com/apk/res-auto" >
 
     <item
         android:id="@+id/action_settings"
@@ -7,5 +8,7 @@
         android:title="@string/action_settings"/>
 	<item android:id="@+id/action_open"
 	    android:title="@string/action_open"
-	    android:alphabeticShortcut="o"/>
+	    android:alphabeticShortcut="o"
+	    yourapp:showAsAction="ifRoom"
+	    android:icon="@drawable/ic_action_collection"/>
 </menu>
