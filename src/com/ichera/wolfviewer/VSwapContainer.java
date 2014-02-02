@@ -6,12 +6,72 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
+import android.graphics.Bitmap;
+
 public class VSwapContainer 
 {
 	private int					m_numChunks;
 	private int					m_spriteStart;
 	private int					m_soundStart;
 	private ArrayList<byte[]>	m_pages;
+	
+	public Bitmap getTextureBitmap(int n)
+	{
+		if(n < 0 || n >= m_spriteStart)
+			return null;
+		
+		if(m_pages.get(n).length < 64 * 64)
+			return null;
+		
+		int[] ret = new int[64 * 64];
+		for(int i = 0; i < ret.length; ++i)
+			ret[64 * (i % 64) + i / 64] = Palette.WL6[m_pages.get(n)[i] & 0xff];
+		
+		return Bitmap.createBitmap(ret, 64, 64, Bitmap.Config.ARGB_8888);
+	}
+	
+	public Bitmap getSpriteBitmap(int n)
+	{
+		if(n < m_spriteStart || n >= m_soundStart)
+			return null;
+		
+		Bitmap bmp = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888);
+		
+		byte[] data = m_pages.get(n);
+		int leftPixel = Global.readUInt16(data, 0);
+		int rightPixel = Global.readUInt16(data, 2);
+		if(leftPixel < 0 || leftPixel >= 64 || rightPixel < 0 || 
+				rightPixel >= 64 || rightPixel < leftPixel)
+			return null;
+		int directoryOffset;
+		int x, y, i, j, topPixel, bottomPixel, postStart;
+		for(x = leftPixel, i = 4; x <= rightPixel; ++x, i += 2)
+		{
+			directoryOffset = Global.readUInt16(data, i);
+			j = directoryOffset;
+			for(;;)
+			{
+				bottomPixel = Global.readUInt16(data, j) / 2;
+				j += 2;
+				if(bottomPixel == 0)
+					break;
+				postStart = Global.readInt16(data, j);
+				j += 2;
+				topPixel = Global.readUInt16(data, j) / 2;
+				j += 2;
+				if(bottomPixel < 0 || bottomPixel > 64 || topPixel < 0 || 
+						topPixel >= 64 || bottomPixel <= topPixel)
+					return null;
+				for(y = topPixel; y < bottomPixel; ++y)
+				{
+					bmp.setPixel(x, y, Palette.WL6[data[postStart + y] & 
+					                               0xff]);
+				}
+			}
+		}
+		
+		return bmp;
+	}
 	
 	public int getNumChunks()
 	{

@@ -3,13 +3,17 @@ package com.ichera.wolfviewer;
 import java.io.File;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -19,8 +23,12 @@ import android.widget.ImageView;
  * @author ioan
  *
  */
-public class MainActivity extends ActionBarActivity 
+public class MainActivity extends ActionBarActivity implements 
+AdapterView.OnItemClickListener
 {
+	@SuppressWarnings("unused")
+	private static final String TAG = "MainActivity";
+	
 	private static final int REQUEST_OPEN_WOLF = 1;
 	private static final String EXTRA_CURRENT_PATH = "currentPath";
 	private static final String EXTRA_HAS_VSWAP_FILE = "hasVswapFile";
@@ -34,6 +42,9 @@ public class MainActivity extends ActionBarActivity
 	
 	// nonsaved
 	private GridView m_gridView;
+	
+	// sound engine
+	private AudioTrack m_track;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) 
@@ -41,7 +52,9 @@ public class MainActivity extends ActionBarActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         m_gridView = (GridView)findViewById(R.id.grid);
-        
+        m_gridView.setOnItemClickListener(this);
+        m_gridView.setSoundEffectsEnabled(false);
+        findViewById(android.R.id.content).setBackgroundColor(Palette.WL6[25]);
         
         if(savedInstanceState != null)
         {
@@ -122,7 +135,7 @@ public class MainActivity extends ActionBarActivity
 		@Override
 		public int getCount() 
 		{
-			return m_vswap != null ? m_vswap.getSpriteStart() : 0;
+			return m_vswap != null ? m_vswap.getNumChunks() : null;
 		}
 
 		@Override
@@ -144,19 +157,60 @@ public class MainActivity extends ActionBarActivity
 			if(convertView == null)
 			{
 				iv = new ImageView(MainActivity.this);
-//				iv.setLayoutParams(new AbsListView.LayoutParams(
-//						(int)(64 * Global.getScale()), (int)(64 * Global.getScale())));
+				iv.setLayoutParams(new AbsListView.LayoutParams(
+						(int)(64 * Global.getScale()), (int)(64 * Global.getScale())));
 				
 			}
 			else
 				iv = (ImageView)convertView;
 			
-			Bitmap bmp = Bitmap.createBitmap( 
-					Palette.getColorsTransposed(m_vswap.getPage(position)), 64, 64, 
-					Bitmap.Config.ARGB_8888);
-			iv.setImageBitmap(bmp);
+			if(position < m_vswap.getSpriteStart())
+				iv.setImageBitmap(m_vswap.getTextureBitmap(position));
+			else if(position < m_vswap.getSoundStart())
+				iv.setImageBitmap(m_vswap.getSpriteBitmap(position));
+			else
+				iv.setImageResource(R.drawable.ic_action_play);
 			return iv;
 		}
     	
     }
+
+	@Override
+	public void onItemClick(AdapterView<?> parent, View v, int position, long id) 
+	{
+		if(m_vswap == null)
+			return;
+		if(position >= m_vswap.getSoundStart())
+		{
+			try
+			{
+				if(m_track != null)
+				{
+					m_track.release();
+					m_track = null;
+				}
+				m_track = new AudioTrack(AudioManager.STREAM_MUSIC, 
+							Global.SOUND_SAMPLE_RATE_HZ, AudioFormat.CHANNEL_OUT_MONO, 
+							AudioFormat.ENCODING_PCM_8BIT, m_vswap.getPage(position).length, 
+							AudioTrack.MODE_STATIC);
+				
+				m_track.write(m_vswap.getPage(position), 0, m_vswap.getPage(position).length);
+				m_track.play();
+			}
+			catch(IllegalStateException e)
+			{
+				Global.showErrorAlert(this, "Can't play sound", 
+						"Unavailable audio player");
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	@Override
+	public void onDestroy()
+	{
+		super.onDestroy();
+		if(m_track != null)
+			m_track.release();
+	}
 }

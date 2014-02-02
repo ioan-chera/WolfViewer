@@ -6,23 +6,7 @@ public class Palette
 {
 	private static int inflateRGB(int r, int g, int b)
 	{
-		return Color.rgb(255/63*r, 255/63*g, 255/63*b);
-	}
-	
-	public static int[] getColors(byte[] indexed)
-	{
-		int[] ret = new int[indexed.length];
-		for(int i = 0; i < ret.length; ++i)
-			ret[i] = WL6[indexed[i] & 0xff];
-		return ret;
-	}
-	
-	public static int[] getColorsTransposed(byte[] indexed)
-	{
-		int[] ret = new int[indexed.length];
-		for(int i = 0; i < ret.length; ++i)
-			ret[64 * (i % 64) + i / 64] = WL6[indexed[i] & 0xff];
-		return ret;
+		return Color.rgb(255*r/63, 255*g/63, 255*b/63);
 	}
 	
 	public static final int[] WL6 = new int[]{

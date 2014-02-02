@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
 import android.util.Log;
 
 public class Global 
@@ -21,6 +23,8 @@ public class Global
 		"VGAHEAD.WL6",
 		"VSWAP.WL6",
 		};
+	
+	public static final int	SOUND_SAMPLE_RATE_HZ = 6896;
 	
 	private static float 	s_scale;
 	
@@ -68,6 +72,14 @@ public class Global
 		raf.read(read, 0, 2);
 		return (read[0] & 0xff) + ((read[1] & 0xff) << 8); 
 	}
+	public static int readUInt16(byte[] data, int offset)
+	{
+		return (data[offset] & 0xff) + ((data[offset + 1] & 0xff) << 8);
+	}
+	public static int readInt16(byte[] data, int offset)
+	{
+		return (data[offset] & 0xff) + (data[offset + 1] << 8);
+	}
 	
 	/**
 	 * Reads a signed int
@@ -90,5 +102,11 @@ public class Global
 		return (read[0] & 0xff) + ((read[1] & 0xff) << 8) 
 				+ ((read[2] & 0xff) << 16) 
 				+ ((read[3] & 0xff) << 24);
+	}
+	
+	public static void showErrorAlert(Context context, String title, String message)
+	{
+		new AlertDialog.Builder(context).setTitle(title)
+		.setMessage(message).setNeutralButton("OK", null).show();
 	}
 }

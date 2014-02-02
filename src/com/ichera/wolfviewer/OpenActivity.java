@@ -5,8 +5,8 @@ import java.io.FilenameFilter;
 import java.util.Arrays;
 import java.util.Stack;
 
-import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Environment;
@@ -39,6 +39,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 	private Stack<FolderState>	m_folderStack;
 	private TextView			m_currentPathLabel;
 	private Button				m_openButton;
+	private Button				m_cancelButton;
 	private ListView			m_listView;
 	
 	private class FolderState
@@ -51,12 +52,17 @@ AdapterView.OnItemClickListener, View.OnClickListener
 	protected void onCreate (Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_open);
+		if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT)
+			setContentView(R.layout.activity_open_portrait);
+		else
+			setContentView(R.layout.activity_open_landscape);
 		m_currentPathLabel = (TextView)findViewById(R.id.current_folder);
 		m_openButton = (Button)findViewById(R.id.open_button);
+		m_cancelButton = (Button)findViewById(R.id.cancel_button);
 		m_listView = (ListView)findViewById(R.id.list);
 		
 		m_openButton.setOnClickListener(this);
+		m_cancelButton.setOnClickListener(this);
 		
 		// Init current path
 		String savedValue = null;
@@ -291,7 +297,12 @@ AdapterView.OnItemClickListener, View.OnClickListener
 	@Override
 	public void onClick(View v) 
 	{
-		if(v == m_openButton)
+		if(v == m_cancelButton)
+		{
+			setResult(RESULT_CANCELED);
+			finish();
+		}
+		else if(v == m_openButton)
 		{
 			boolean invalid = false;
 			File[] wl6files = m_currentPath.listFiles(new FilenameFilter() 
@@ -315,8 +326,8 @@ AdapterView.OnItemClickListener, View.OnClickListener
 			
 			if(invalid)
 			{
-				new AlertDialog.Builder(this).setTitle("Cannot Open")
-				.setMessage("Current folder has no Wolfenstein data.").show();
+				Global.showErrorAlert(this, "Cannot open", 
+						"Current folder has no Wolfenstein data.");
 			}
 			else
 			{
