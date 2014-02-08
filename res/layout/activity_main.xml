@@ -7,11 +7,28 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".MainActivity" >
+    
+    <ScrollView android:id="@+id/vertical_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <HorizontalScrollView android:id="@+id/horizontal_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <android.support.v7.widget.GridLayout android:id="@+id/grid_layout"
+		        android:layout_width="wrap_content"
+		        android:layout_height="match_parent"
+		        android:columnCount="64"
+		        android:rowCount="64"/>
+        </HorizontalScrollView>
+    </ScrollView>
+    
+    
+    <!-- 
     <GridView android:id="@+id/grid"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:numColumns="4"
         android:horizontalSpacing="2dp"
         android:verticalSpacing="2dp"/>
-
+	-->
 </RelativeLayout>

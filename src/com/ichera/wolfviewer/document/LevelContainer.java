@@ -10,10 +10,10 @@ import com.ichera.wolfviewer.Global;
 
 public class LevelContainer 
 {
-	private static final int NUMMAPS = 60;
-	private static final int MAPPLANES = 2;
-	private static final int MAPSIZE = 64;
-	private static final int maparea = MAPSIZE * MAPSIZE;
+	public static final int NUMMAPS = 60;
+	public static final int MAPPLANES = 2;
+	public static final int MAPSIZE = 64;
+	public static final int maparea = MAPSIZE * MAPSIZE;
 	
 	private short[][][] mLevels;
 	
@@ -154,7 +154,7 @@ public class LevelContainer
 				expandedLength = (intermediaryData[0] & 0xff) + (intermediaryData[1] & 0xff) * 256;
 				
 				// Intermediary data -> RLEW Expand -> Final data
-				ret[MAPPLANES] = Global.rlewExpandByteToShort(intermediaryData, 2, 
+				ret[plane] = Global.rlewExpandByteToShort(intermediaryData, 2, 
 						expandedLength, newRlewTag);
 			}
 		}

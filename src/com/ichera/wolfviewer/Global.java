@@ -134,7 +134,7 @@ public class Global
 				count = ch & 0xff;
 				if(count == 0)
 				{
-					ch |= source[inIndex++];
+					ch |= source[inIndex++] & 0xff;
 					dest[2 * outIndex] = (byte)(ch & 0xff);
 					dest[2 * outIndex + 1] = (byte)(ch / 256);
 					outIndex++;
@@ -142,7 +142,7 @@ public class Global
 				}
 				else
 				{
-					offset = source[inIndex++];
+					offset = source[inIndex++] & 0xff;
 					copyIndex = outIndex - offset;
 					outLength -= count;
 					if(outLength < 0)
@@ -162,7 +162,7 @@ public class Global
 				count = ch & 0xff;
 				if(count == 0)
 				{
-					ch |= source[inIndex++];
+					ch |= source[inIndex++] & 0xff;
 					dest[2 * outIndex] = (byte)(ch & 0xff);
 					dest[2 * outIndex + 1] = (byte)(ch / 256);
 					outIndex++;
@@ -190,6 +190,7 @@ public class Global
 			{
 				dest[2 * outIndex] = (byte)(ch & 0xff);
 				dest[2 * outIndex + 1] = (byte)(ch / 256);
+				outIndex++;
 				outLength--;
 			}
 		}
@@ -197,9 +198,10 @@ public class Global
 		return dest;
 	}
 	
-	public static short[] rlewExpandByteToShort(byte[] source, int inOffset, int outLength, int rlewTag)
+	public static short[] rlewExpandByteToShort(byte[] source, int inOffset, 
+			int outLength, int rlewTag)
 	{
-		short[] dest = new short[outLength];
+		short[] dest = new short[outLength / 2];
 		int inIndex = inOffset;
 		int outIndex = 0;
 		int value, count, i;

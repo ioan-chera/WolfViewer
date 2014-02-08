@@ -10,16 +10,19 @@ import com.ichera.wolfviewer.Global;
 import com.ichera.wolfviewer.Palette;
 
 import android.graphics.Bitmap;
+import android.support.v4.util.LruCache;
 
 /**
  * Container for VSWAP.WL6 data (walls, sprites, wave sound chunks)
  */
 public class VSwapContainer 
 {
-	private int					mNumChunks;
-	private int					mSpriteStart;
-	private int					mSoundStart;
-	private ArrayList<byte[]>	mPages;
+	private int							mNumChunks;
+	private int							mSpriteStart;
+	private int							mSoundStart;
+	private ArrayList<byte[]>			mPages;
+	
+	private LruCache<Integer, Bitmap>	mBitmapCache;
 	
 	/**
 	 * Gets a bitmap from a given wall texture
@@ -34,11 +37,23 @@ public class VSwapContainer
 		if(mPages.get(n).length < 64 * 64)
 			return null;
 		
+		if(mBitmapCache == null)
+		{
+			mBitmapCache = new LruCache<Integer, Bitmap>(mSpriteStart);
+		}
+		
 		int[] ret = new int[64 * 64];
 		for(int i = 0; i < ret.length; ++i)
 			ret[64 * (i % 64) + i / 64] = Palette.WL6[mPages.get(n)[i] & 0xff];
 		
-		return Bitmap.createBitmap(ret, 64, 64, Bitmap.Config.ARGB_8888);
+		Bitmap bmp = mBitmapCache.get(n);
+		if(bmp == null)
+		{
+			bmp = Bitmap.createBitmap(ret, 64, 64, Bitmap.Config.ARGB_8888);
+			mBitmapCache.put(n, bmp);
+		}
+		
+		return bmp;
 	}
 	
 	/**
@@ -136,6 +151,8 @@ public class VSwapContainer
 		RandomAccessFile raf = null;
 		try 
 		{
+			if(file.isDirectory())
+				return false;
 			raf = new RandomAccessFile(file, "r");
 
 			int newNumChunks = Global.readUInt16(raf);

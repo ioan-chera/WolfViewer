@@ -13,6 +13,7 @@ public class Document
 	
 	// Wolf data
 	private VSwapContainer	mVSwap;
+	private LevelContainer	mLevels;
 	
 	// If it was loaded, it has a corresponding directory. NOTE: it may not
 	// exist any more or be invalidated. Either declare the Document damaged
@@ -59,17 +60,31 @@ public class Document
 		if(!directory.isDirectory())
 			return false;
 		
-		// Try to read VSWAP.WL6
+		// First check if files exist
 		File vSwapFile = new File(directory, "vswap.wl6");
 		if(!vSwapFile.exists())
 			return false;
+		File mapHeadFile = new File(directory, "maphead.wl6");
+		if(!mapHeadFile.exists())
+			return false;
+		File gameMapsFile = new File(directory, "gamemaps.wl6");
+		if(!gameMapsFile.exists())
+			return false;
+		
+		// Try loading vswap container
 		VSwapContainer vswap = new VSwapContainer();
 		if(!vswap.loadFile(vSwapFile))
+			return false;
+		
+		// Try loading level container
+		LevelContainer levels = new LevelContainer();
+		if(!levels.loadFile(mapHeadFile, gameMapsFile))
 			return false;
 		
 		// Success
 		mDirectory = directory;
 		mVSwap = vswap;
+		mLevels = levels;
 		return true;
 	}
 	
@@ -80,5 +95,10 @@ public class Document
 	public VSwapContainer getVSwap()
 	{
 		return mVSwap;
+	}
+	
+	public LevelContainer getLevels()
+	{
+		return mLevels;
 	}
 }

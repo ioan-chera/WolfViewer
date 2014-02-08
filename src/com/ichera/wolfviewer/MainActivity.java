@@ -3,11 +3,13 @@ package com.ichera.wolfviewer;
 import java.io.File;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.GridLayout;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,10 +17,10 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.GridView;
 import android.widget.ImageView;
 
 import com.ichera.wolfviewer.document.Document;
+import com.ichera.wolfviewer.document.LevelContainer;
 
 /**
  * Startup activity
@@ -41,7 +43,8 @@ AdapterView.OnItemClickListener
 	private Document mDocument;
 	
 	// nonsaved
-	private GridView mGridView;
+//	private GridView mGridView;
+	private GridLayout mGridLayout;
 	
 	// sound engine
 	private AudioTrack mTrack;
@@ -51,13 +54,14 @@ AdapterView.OnItemClickListener
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mGridView = (GridView)findViewById(R.id.grid);
-        mGridView.setOnItemClickListener(this);
-        mGridView.setSoundEffectsEnabled(false);
+        mGridLayout = (GridLayout)findViewById(R.id.grid_layout);
+//        mGridView = (GridView)findViewById(R.id.grid);
+//        mGridView.setOnItemClickListener(this);
+//        mGridView.setSoundEffectsEnabled(false);
         findViewById(android.R.id.content).setBackgroundColor(Palette.WL6[25]);
         
         mDocument = Document.getInstance();
-        mGridView.setAdapter(new GridAdapter());
+//        mGridView.setAdapter(new GridAdapter());
         
         if(savedInstanceState != null)
         {
@@ -65,6 +69,8 @@ AdapterView.OnItemClickListener
         	if(value != null)
         		mCurrentPath = new File(value);
         }
+        
+        updateGridLayout();
         
         Global.initialize(this);
     }
@@ -96,7 +102,8 @@ AdapterView.OnItemClickListener
     		if(!mDocument.loadFromDirectory(mCurrentPath))
     			Global.showErrorAlert(this, "Error", "Cannot open document " + mCurrentPath);
     		else
-    			((BaseAdapter)mGridView.getAdapter()).notifyDataSetChanged();
+    			updateGridLayout();
+//    			((BaseAdapter)mGridView.getAdapter()).notifyDataSetChanged();
     	}
     }
     
@@ -118,6 +125,46 @@ AdapterView.OnItemClickListener
     		break;
     	}
     	return super.onOptionsItemSelected(item);
+    }
+    
+    private void updateGridLayout()
+    {
+    	if(!mDocument.isLoaded())
+    		return;
+    	
+    	mGridLayout.removeAllViews();
+    	
+    	short[][] level = mDocument.getLevels().getLevel(9);
+    	
+    	short[] wallplane = level[0];
+    	
+    	int x, y, texture, cell;
+    	ImageView iv;
+    	GridLayout.LayoutParams gllp;
+    	for(x = 0; x < LevelContainer.MAPSIZE; ++x)
+    		for(y = 0; y < LevelContainer.MAPSIZE; ++y)
+    		{
+    			iv = new ImageView(this);
+    			gllp = new GridLayout.LayoutParams();
+    			gllp.width = (int)(64 * Global.getScale());
+				gllp.height = (int)(64 * Global.getScale());
+				gllp.columnSpec = GridLayout.spec(x);
+				gllp.rowSpec = GridLayout.spec(y);
+				iv.setLayoutParams(gllp);
+				iv.setBackgroundColor(Color.BLACK);
+				
+				cell = wallplane[x * LevelContainer.MAPSIZE + y];
+				if(cell > 0)
+				{
+	    			texture = 2 * (cell - 1);
+	    			if(texture < mDocument.getVSwap().getSpriteStart())
+	    			{
+	    				iv.setImageBitmap(mDocument.getVSwap().getTextureBitmap(texture));
+	    			}
+				}
+    			
+    			mGridLayout.addView(iv);
+    		}
     }
     
     /**
@@ -214,5 +261,6 @@ AdapterView.OnItemClickListener
 		super.onDestroy();
 		if(mTrack != null)
 			mTrack.release();
+		mGridLayout.removeAllViews();
 	}
 }
