@@ -1,4 +1,4 @@
-package com.ichera.wolfviewer;
+package com.ichera.wolfviewer.document;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -6,38 +6,54 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
+import com.ichera.wolfviewer.Global;
+import com.ichera.wolfviewer.Palette;
+
 import android.graphics.Bitmap;
 
+/**
+ * Container for VSWAP.WL6 data (walls, sprites, wave sound chunks)
+ */
 public class VSwapContainer 
 {
-	private int					m_numChunks;
-	private int					m_spriteStart;
-	private int					m_soundStart;
-	private ArrayList<byte[]>	m_pages;
+	private int					mNumChunks;
+	private int					mSpriteStart;
+	private int					mSoundStart;
+	private ArrayList<byte[]>	mPages;
 	
+	/**
+	 * Gets a bitmap from a given wall texture
+	 * @param n Index of wall texture
+	 * @return Null if invalid index or not a wall texture, the bitmap otherwise
+	 */
 	public Bitmap getTextureBitmap(int n)
 	{
-		if(n < 0 || n >= m_spriteStart)
+		if(n < 0 || n >= mSpriteStart)
 			return null;
 		
-		if(m_pages.get(n).length < 64 * 64)
+		if(mPages.get(n).length < 64 * 64)
 			return null;
 		
 		int[] ret = new int[64 * 64];
 		for(int i = 0; i < ret.length; ++i)
-			ret[64 * (i % 64) + i / 64] = Palette.WL6[m_pages.get(n)[i] & 0xff];
+			ret[64 * (i % 64) + i / 64] = Palette.WL6[mPages.get(n)[i] & 0xff];
 		
 		return Bitmap.createBitmap(ret, 64, 64, Bitmap.Config.ARGB_8888);
 	}
 	
+	/**
+	 * Gets a 64x64 bitmap from a given sprite 
+	 * @param n Index of sprite
+	 * @return Null if invalid or out of bounds, the bitmap otherwise
+	 */
 	public Bitmap getSpriteBitmap(int n)
 	{
-		if(n < m_spriteStart || n >= m_soundStart)
+		if(n < mSpriteStart || n >= mSoundStart)
 			return null;
 		
 		Bitmap bmp = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888);
 		
-		byte[] data = m_pages.get(n);
+		byte[] data = mPages.get(n);
 		int leftPixel = Global.readUInt16(data, 0);
 		int rightPixel = Global.readUInt16(data, 2);
 		if(leftPixel < 0 || leftPixel >= 64 || rightPixel < 0 || 
@@ -73,26 +89,48 @@ public class VSwapContainer
 		return bmp;
 	}
 	
+	/**
+	 * Number of chunks
+	 * @return Total number of chunks
+	 */
 	public int getNumChunks()
 	{
-		return m_numChunks;
+		return mNumChunks;
 	}
 	
+	/**
+	 * Index of first sprite
+	 * @return
+	 */
 	public int getSpriteStart()
 	{
-		return m_spriteStart;
+		return mSpriteStart;
 	}
 	
+	/**
+	 * Index of first sound chunk
+	 * @return
+	 */
 	public int getSoundStart()
 	{
-		return m_soundStart;
+		return mSoundStart;
 	}
 	
+	/**
+	 * Raw data of given chunk
+	 * @param n Index of chunk
+	 * @return a byte array
+	 */
 	public byte[] getPage(int n)
 	{
-		return m_pages.get(n);
+		return mPages.get(n);
 	}
 	
+	/**
+	 * Loads data from a file. Only finishes it on success
+	 * @param file the VSWAP.WL6 file to load
+	 * @return true on success
+	 */
 	public boolean loadFile(File file)
 	{
 		RandomAccessFile raf = null;
@@ -138,10 +176,10 @@ public class VSwapContainer
 			}
 			
 			// okay
-			m_numChunks = newNumChunks;
-			m_spriteStart = newSpriteStart;
-			m_soundStart = newSoundStart;
-			m_pages = newPages;
+			mNumChunks = newNumChunks;
+			mSpriteStart = newSpriteStart;
+			mSoundStart = newSoundStart;
+			mPages = newPages;
 			
 		}
 		catch(FileNotFoundException fnfe)

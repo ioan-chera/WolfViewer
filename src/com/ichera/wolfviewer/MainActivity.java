@@ -18,6 +18,8 @@ import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
 
+import com.ichera.wolfviewer.document.Document;
+
 /**
  * Startup activity
  * @author ioan
@@ -31,41 +33,37 @@ AdapterView.OnItemClickListener
 	
 	private static final int REQUEST_OPEN_WOLF = 1;
 	private static final String EXTRA_CURRENT_PATH = "currentPath";
-	private static final String EXTRA_HAS_VSWAP_FILE = "hasVswapFile";
 	
 	// saved
-	private File m_currentPath;
-	private File m_vswapFile;
+	private File mCurrentPath;
 	
 	// generated
-	private VSwapContainer m_vswap;
+	private Document mDocument;
 	
 	// nonsaved
-	private GridView m_gridView;
+	private GridView mGridView;
 	
 	// sound engine
-	private AudioTrack m_track;
+	private AudioTrack mTrack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) 
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        m_gridView = (GridView)findViewById(R.id.grid);
-        m_gridView.setOnItemClickListener(this);
-        m_gridView.setSoundEffectsEnabled(false);
+        mGridView = (GridView)findViewById(R.id.grid);
+        mGridView.setOnItemClickListener(this);
+        mGridView.setSoundEffectsEnabled(false);
         findViewById(android.R.id.content).setBackgroundColor(Palette.WL6[25]);
+        
+        mDocument = Document.getInstance();
+        mGridView.setAdapter(new GridAdapter());
         
         if(savedInstanceState != null)
         {
         	String value = savedInstanceState.getString(EXTRA_CURRENT_PATH);
         	if(value != null)
-        		m_currentPath = new File(value);
-        	boolean has = savedInstanceState.getBoolean(EXTRA_HAS_VSWAP_FILE);
-        	if(m_currentPath != null && has)
-        	{
-        		updateTextureView();
-        	}
+        		mCurrentPath = new File(value);
         }
         
         Global.initialize(this);
@@ -74,10 +72,8 @@ AdapterView.OnItemClickListener
     @Override
     protected void onSaveInstanceState(Bundle outState)
     {
-    	if(m_currentPath != null)
-    		outState.putString(EXTRA_CURRENT_PATH, m_currentPath.getPath());
-    	if(m_vswapFile != null)
-    		outState.putBoolean(EXTRA_HAS_VSWAP_FILE, true);
+    	if(mCurrentPath != null)
+    		outState.putString(EXTRA_CURRENT_PATH, mCurrentPath.getPath());
     	super.onSaveInstanceState(outState);
     }
 
@@ -89,14 +85,6 @@ AdapterView.OnItemClickListener
         return true;
     }
     
-    private void updateTextureView()
-    {
-		m_vswapFile = new File(m_currentPath, "vswap.wl6");
-		m_vswap = new VSwapContainer();
-		m_vswap.loadFile(m_vswapFile);
-		m_gridView.setAdapter(new GridAdapter());
-    }
-    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, 
     		Intent data)
@@ -104,8 +92,11 @@ AdapterView.OnItemClickListener
     	super.onActivityResult(requestCode, resultCode, data);
     	if(requestCode == REQUEST_OPEN_WOLF && resultCode == RESULT_OK)
     	{
-    		m_currentPath = new File(data.getStringExtra(OpenActivity.EXTRA_CURRENT_PATH));
-    		updateTextureView();
+    		mCurrentPath = new File(data.getStringExtra(OpenActivity.EXTRA_CURRENT_PATH));
+    		if(!mDocument.loadFromDirectory(mCurrentPath))
+    			Global.showErrorAlert(this, "Error", "Cannot open document " + mCurrentPath);
+    		else
+    			((BaseAdapter)mGridView.getAdapter()).notifyDataSetChanged();
     	}
     }
     
@@ -117,9 +108,9 @@ AdapterView.OnItemClickListener
     	case R.id.action_open:
     	{
     		Intent intent = new Intent(this, OpenActivity.class);
-    		if(m_currentPath != null)
+    		if(mCurrentPath != null)
     			intent.putExtra(OpenActivity.EXTRA_CURRENT_PATH, 
-    					m_currentPath.getPath());
+    					mCurrentPath.getPath());
     		startActivityForResult(intent, REQUEST_OPEN_WOLF);
     	}
     		break;
@@ -129,19 +120,26 @@ AdapterView.OnItemClickListener
     	return super.onOptionsItemSelected(item);
     }
     
+    /**
+     * Adapter for the grid view
+     * @author ioan
+     *
+     */
     private class GridAdapter extends BaseAdapter
     {
 
 		@Override
 		public int getCount() 
 		{
-			return m_vswap != null ? m_vswap.getNumChunks() : null;
+			return mDocument.isLoaded() ? mDocument.getVSwap().getNumChunks() : 
+				0;
 		}
 
 		@Override
 		public Object getItem(int position) 
 		{
-			return m_vswap != null ? m_vswap.getPage(position) : null;
+			return mDocument.isLoaded() ? mDocument.getVSwap().getPage(position) 
+					: null;
 		}
 
 		@Override
@@ -164,10 +162,12 @@ AdapterView.OnItemClickListener
 			else
 				iv = (ImageView)convertView;
 			
-			if(position < m_vswap.getSpriteStart())
-				iv.setImageBitmap(m_vswap.getTextureBitmap(position));
-			else if(position < m_vswap.getSoundStart())
-				iv.setImageBitmap(m_vswap.getSpriteBitmap(position));
+			if(position < mDocument.getVSwap().getSpriteStart())
+				iv.setImageBitmap(mDocument.getVSwap()
+						.getTextureBitmap(position));
+			else if(position < mDocument.getVSwap().getSoundStart())
+				iv.setImageBitmap(mDocument.getVSwap()
+						.getSpriteBitmap(position));
 			else
 				iv.setImageResource(R.drawable.ic_action_play);
 			return iv;
@@ -178,24 +178,26 @@ AdapterView.OnItemClickListener
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, int position, long id) 
 	{
-		if(m_vswap == null)
+		if(!mDocument.isLoaded())
 			return;
-		if(position >= m_vswap.getSoundStart())
+		if(position >= mDocument.getVSwap().getSoundStart())
 		{
 			try
 			{
-				if(m_track != null)
+				if(mTrack != null)
 				{
-					m_track.release();
-					m_track = null;
+					mTrack.release();
+					mTrack = null;
 				}
-				m_track = new AudioTrack(AudioManager.STREAM_MUSIC, 
+				mTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 
 							Global.SOUND_SAMPLE_RATE_HZ, AudioFormat.CHANNEL_OUT_MONO, 
-							AudioFormat.ENCODING_PCM_8BIT, m_vswap.getPage(position).length, 
+							AudioFormat.ENCODING_PCM_8BIT, 
+							mDocument.getVSwap().getPage(position).length, 
 							AudioTrack.MODE_STATIC);
 				
-				m_track.write(m_vswap.getPage(position), 0, m_vswap.getPage(position).length);
-				m_track.play();
+				mTrack.write(mDocument.getVSwap().getPage(position), 0, 
+						mDocument.getVSwap().getPage(position).length);
+				mTrack.play();
 			}
 			catch(IllegalStateException e)
 			{
@@ -210,7 +212,7 @@ AdapterView.OnItemClickListener
 	public void onDestroy()
 	{
 		super.onDestroy();
-		if(m_track != null)
-			m_track.release();
+		if(mTrack != null)
+			mTrack.release();
 	}
 }

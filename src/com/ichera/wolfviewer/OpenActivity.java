@@ -1,7 +1,6 @@
 package com.ichera.wolfviewer;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.util.Arrays;
 import java.util.Stack;
 
@@ -34,13 +33,13 @@ AdapterView.OnItemClickListener, View.OnClickListener
 	private static final String	EXTRA_PATH_HISTORY = "pathHistory";
 	private static final String EXTRA_STATE_HISTORY = "stateHistory";
 	
-	private OpenAdapter			m_adapter;
-	private File				m_currentPath;
-	private Stack<FolderState>	m_folderStack;
-	private TextView			m_currentPathLabel;
-	private Button				m_openButton;
-	private Button				m_cancelButton;
-	private ListView			m_listView;
+	private OpenAdapter			mAdapter;
+	private File				mCurrentPath;
+	private Stack<FolderState>	mFolderStack;
+	private TextView			mCurrentPathLabel;
+	private Button				mOpenButton;
+	private Button				mCancelButton;
+	private ListView			mListView;
 	
 	private class FolderState
 	{
@@ -56,13 +55,13 @@ AdapterView.OnItemClickListener, View.OnClickListener
 			setContentView(R.layout.activity_open_portrait);
 		else
 			setContentView(R.layout.activity_open_landscape);
-		m_currentPathLabel = (TextView)findViewById(R.id.current_folder);
-		m_openButton = (Button)findViewById(R.id.open_button);
-		m_cancelButton = (Button)findViewById(R.id.cancel_button);
-		m_listView = (ListView)findViewById(R.id.list);
+		mCurrentPathLabel = (TextView)findViewById(R.id.current_folder);
+		mOpenButton = (Button)findViewById(R.id.open_button);
+		mCancelButton = (Button)findViewById(R.id.cancel_button);
+		mListView = (ListView)findViewById(R.id.list);
 		
-		m_openButton.setOnClickListener(this);
-		m_cancelButton.setOnClickListener(this);
+		mOpenButton.setOnClickListener(this);
+		mCancelButton.setOnClickListener(this);
 		
 		// Init current path
 		String savedValue = null;
@@ -79,13 +78,13 @@ AdapterView.OnItemClickListener, View.OnClickListener
 				if(stateHistory != null && 
 						stateHistory.length == pathHistory.length)
 				{
-					m_folderStack = new Stack<OpenActivity.FolderState>();
+					mFolderStack = new Stack<OpenActivity.FolderState>();
 					for(int i = pathHistory.length - 1; i >= 0; --i)
 					{
 						FolderState fs = new FolderState();
 						fs.path = new File(pathHistory[i]);
 						fs.listInstanceState = stateHistory[i];
-						m_folderStack.push(fs);
+						mFolderStack.push(fs);
 					}
 				}
 			}
@@ -97,49 +96,49 @@ AdapterView.OnItemClickListener, View.OnClickListener
 			{
 				String value = args.getString(EXTRA_CURRENT_PATH);
 				if(value != null)
-					m_currentPath = new File(value);
+					mCurrentPath = new File(value);
 			}
 		}
 		else
-			m_currentPath = new File(savedValue);		
-		if(m_currentPath == null)
-			m_currentPath = Environment.getExternalStorageDirectory();
+			mCurrentPath = new File(savedValue);		
+		if(mCurrentPath == null)
+			mCurrentPath = Environment.getExternalStorageDirectory();
 		
 		
-		m_adapter = new OpenAdapter(m_currentPath);
-		m_listView.setAdapter(m_adapter);
-		m_listView.setOnItemClickListener(this);
+		mAdapter = new OpenAdapter(mCurrentPath);
+		mListView.setAdapter(mAdapter);
+		mListView.setOnItemClickListener(this);
 	}
 	
 	@Override
 	protected void onSaveInstanceState (Bundle outState)
 	{
-		if(m_folderStack != null && m_folderStack.size() > 0)
+		if(mFolderStack != null && mFolderStack.size() > 0)
 		{
-			String[] pathArray = new String[m_folderStack.size()];
-			Parcelable[] stateArray = new Parcelable[m_folderStack.size()];
+			String[] pathArray = new String[mFolderStack.size()];
+			Parcelable[] stateArray = new Parcelable[mFolderStack.size()];
 			for(int i = 0; i < pathArray.length; ++i)
 			{
-				FolderState fs = m_folderStack.pop();
+				FolderState fs = mFolderStack.pop();
 				pathArray[i] = fs.path.getPath();
 				stateArray[i] = fs.listInstanceState;
 			}
 			outState.putStringArray(EXTRA_PATH_HISTORY, pathArray);
 			outState.putParcelableArray(EXTRA_STATE_HISTORY, stateArray);
 		}
-		outState.putString(EXTRA_CURRENT_PATH, m_currentPath.getPath());
+		outState.putString(EXTRA_CURRENT_PATH, mCurrentPath.getPath());
 		super.onSaveInstanceState(outState);
 	}
 	
 	@Override
 	public void onBackPressed()
 	{
-		if(m_folderStack != null && m_folderStack.size() > 0)
+		if(mFolderStack != null && mFolderStack.size() > 0)
 		{
-			FolderState fs = m_folderStack.pop();
-			m_currentPath = fs.path;
-			m_adapter.setFileList(m_currentPath);
-			m_listView.onRestoreInstanceState(fs.listInstanceState);
+			FolderState fs = mFolderStack.pop();
+			mCurrentPath = fs.path;
+			mAdapter.setFileList(mCurrentPath);
+			mListView.onRestoreInstanceState(fs.listInstanceState);
 		}
 		else
 			super.onBackPressed();
@@ -152,7 +151,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 	 */
 	private class OpenAdapter extends BaseAdapter
 	{
-		private File[]	m_fileList;
+		private File[]	mFileList;
 				
 		/**
 		 * Main constructor
@@ -181,10 +180,10 @@ AdapterView.OnItemClickListener, View.OnClickListener
 		{
 			File[] files = dir.listFiles();
 			Arrays.sort(files);
-			if(m_fileList != files)
+			if(mFileList != files)
 			{
-				m_currentPathLabel.setText(dir.getPath());
-				m_fileList = files;
+				mCurrentPathLabel.setText(dir.getPath());
+				mFileList = files;
 				if(notify)
 					notifyDataSetChanged();
 			}
@@ -193,13 +192,13 @@ AdapterView.OnItemClickListener, View.OnClickListener
 		@Override
 		public int getCount() 
 		{
-			return m_fileList.length;
+			return mFileList.length;
 		}
 
 		@Override
 		public Object getItem(int position) 
 		{
-			return m_fileList[position];
+			return mFileList[position];
 		}
 
 		@Override
@@ -224,11 +223,11 @@ AdapterView.OnItemClickListener, View.OnClickListener
 			else
 				item = (TextView)convertView;
 			
-			if(m_fileList[position].isDirectory())
+			if(mFileList[position].isDirectory())
 				item.setTypeface(Typeface.DEFAULT_BOLD);
 			else
 				item.setTypeface(Typeface.DEFAULT);
-			item.setText(m_fileList[position].getName());
+			item.setText(mFileList[position].getName());
 			
 			return item;
 		}
@@ -280,62 +279,34 @@ AdapterView.OnItemClickListener, View.OnClickListener
 	public void onItemClick(AdapterView<?> parent, View view, int position, 
 			long id) 
 	{
-		File dir =  (File)m_adapter.getItem(position);
+		File dir =  (File)mAdapter.getItem(position);
 		if(dir.isDirectory())
 		{
-			if(m_folderStack == null)
-				m_folderStack = new Stack<FolderState>();
+			if(mFolderStack == null)
+				mFolderStack = new Stack<FolderState>();
 			FolderState fs = new FolderState();
-			fs.listInstanceState = m_listView.onSaveInstanceState();
-			fs.path = m_currentPath;
-			m_folderStack.push(fs);
-			m_currentPath = dir;
-			m_adapter.setFileList(m_currentPath);
+			fs.listInstanceState = mListView.onSaveInstanceState();
+			fs.path = mCurrentPath;
+			mFolderStack.push(fs);
+			mCurrentPath = dir;
+			mAdapter.setFileList(mCurrentPath);
 		}
 	}
 
 	@Override
 	public void onClick(View v) 
 	{
-		if(v == m_cancelButton)
+		if(v == mCancelButton)
 		{
 			setResult(RESULT_CANCELED);
 			finish();
 		}
-		else if(v == m_openButton)
+		else if(v == mOpenButton)
 		{
-			boolean invalid = false;
-			File[] wl6files = m_currentPath.listFiles(new FilenameFilter() 
-			{
-				@Override
-				public boolean accept(File dir, String filename) 
-				{
-					for(String name : Global.getWolfFileNames())
-					{
-						if(name.compareToIgnoreCase(filename) == 0)
-							return true;
-					}
-					return false;
-				}
-			});
-			if(wl6files == null)
-				invalid = true;
-			
-			if(wl6files.length != Global.getWolfFileNames().length)
-				invalid = true;
-			
-			if(invalid)
-			{
-				Global.showErrorAlert(this, "Cannot open", 
-						"Current folder has no Wolfenstein data.");
-			}
-			else
-			{
-				Intent data = new Intent();
-				data.putExtra(EXTRA_CURRENT_PATH, m_currentPath.getPath());
-				setResult(RESULT_OK, data);
-				finish();
-			}
+			Intent data = new Intent();
+			data.putExtra(EXTRA_CURRENT_PATH, mCurrentPath.getPath());
+			setResult(RESULT_OK, data);
+			finish();
 		}
 	}
 }
