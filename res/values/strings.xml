@@ -6,6 +6,8 @@
     
     <string name="action_settings">Settings</string>
     <string name="action_open">Open</string>
+    <string name="action_next">Next</string>
+    <string name="action_prev">Previous</string>
     <string name="message_no_wolf3d_dir_found">No Wolfenstein 3D directories found in your device.</string>
     
     <string name="hello_world">Hello world!</string>

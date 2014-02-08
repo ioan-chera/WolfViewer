@@ -22,14 +22,15 @@ public class VSwapContainer
 	private int							mSoundStart;
 	private ArrayList<byte[]>			mPages;
 	
-	private LruCache<Integer, Bitmap>	mBitmapCache;
+	private LruCache<Integer, Bitmap>	mWallBitmapCache;
+	private LruCache<Integer, Bitmap>	mSpriteBitmapCache;
 	
 	/**
 	 * Gets a bitmap from a given wall texture
 	 * @param n Index of wall texture
 	 * @return Null if invalid index or not a wall texture, the bitmap otherwise
 	 */
-	public Bitmap getTextureBitmap(int n)
+	public Bitmap getWallBitmap(int n)
 	{
 		if(n < 0 || n >= mSpriteStart)
 			return null;
@@ -37,20 +38,19 @@ public class VSwapContainer
 		if(mPages.get(n).length < 64 * 64)
 			return null;
 		
-		if(mBitmapCache == null)
+		if(mWallBitmapCache == null)
 		{
-			mBitmapCache = new LruCache<Integer, Bitmap>(mSpriteStart);
+			mWallBitmapCache = new LruCache<Integer, Bitmap>(mSpriteStart);
 		}
 		
-		int[] ret = new int[64 * 64];
-		for(int i = 0; i < ret.length; ++i)
-			ret[64 * (i % 64) + i / 64] = Palette.WL6[mPages.get(n)[i] & 0xff];
-		
-		Bitmap bmp = mBitmapCache.get(n);
+		Bitmap bmp = mWallBitmapCache.get(n);
 		if(bmp == null)
 		{
+			int[] ret = new int[64 * 64];
+			for(int i = 0; i < ret.length; ++i)
+				ret[64 * (i % 64) + i / 64] = Palette.WL6[mPages.get(n)[i] & 0xff];
 			bmp = Bitmap.createBitmap(ret, 64, 64, Bitmap.Config.ARGB_8888);
-			mBitmapCache.put(n, bmp);
+			mWallBitmapCache.put(n, bmp);
 		}
 		
 		return bmp;
@@ -63,42 +63,53 @@ public class VSwapContainer
 	 */
 	public Bitmap getSpriteBitmap(int n)
 	{
-		if(n < mSpriteStart || n >= mSoundStart)
+		if(n < 0 || n >= mSoundStart - mSpriteStart)
 			return null;
 		
-		Bitmap bmp = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888);
-		
-		byte[] data = mPages.get(n);
-		int leftPixel = Global.readUInt16(data, 0);
-		int rightPixel = Global.readUInt16(data, 2);
-		if(leftPixel < 0 || leftPixel >= 64 || rightPixel < 0 || 
-				rightPixel >= 64 || rightPixel < leftPixel)
-			return null;
-		int directoryOffset;
-		int x, y, i, j, topPixel, bottomPixel, postStart;
-		for(x = leftPixel, i = 4; x <= rightPixel; ++x, i += 2)
+		if(mSpriteBitmapCache == null)
 		{
-			directoryOffset = Global.readUInt16(data, i);
-			j = directoryOffset;
-			for(;;)
+			mSpriteBitmapCache = new LruCache<Integer, Bitmap>(mSoundStart - mSpriteStart);
+		}
+		
+		Bitmap bmp = mSpriteBitmapCache.get(n);
+		
+		if(bmp == null)
+		{
+			bmp = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888);
+			
+			byte[] data = mPages.get(mSpriteStart + n);
+			int leftPixel = Global.readUInt16(data, 0);
+			int rightPixel = Global.readUInt16(data, 2);
+			if(leftPixel < 0 || leftPixel >= 64 || rightPixel < 0 || 
+					rightPixel >= 64 || rightPixel < leftPixel)
+				return null;
+			int directoryOffset;
+			int x, y, i, j, topPixel, bottomPixel, postStart;
+			for(x = leftPixel, i = 4; x <= rightPixel; ++x, i += 2)
 			{
-				bottomPixel = Global.readUInt16(data, j) / 2;
-				j += 2;
-				if(bottomPixel == 0)
-					break;
-				postStart = Global.readInt16(data, j);
-				j += 2;
-				topPixel = Global.readUInt16(data, j) / 2;
-				j += 2;
-				if(bottomPixel < 0 || bottomPixel > 64 || topPixel < 0 || 
-						topPixel >= 64 || bottomPixel <= topPixel)
-					return null;
-				for(y = topPixel; y < bottomPixel; ++y)
+				directoryOffset = Global.readUInt16(data, i);
+				j = directoryOffset;
+				for(;;)
 				{
-					bmp.setPixel(x, y, Palette.WL6[data[postStart + y] & 
-					                               0xff]);
+					bottomPixel = Global.readUInt16(data, j) / 2;
+					j += 2;
+					if(bottomPixel == 0)
+						break;
+					postStart = Global.readInt16(data, j);
+					j += 2;
+					topPixel = Global.readUInt16(data, j) / 2;
+					j += 2;
+					if(bottomPixel < 0 || bottomPixel > 64 || topPixel < 0 || 
+							topPixel >= 64 || bottomPixel <= topPixel)
+						return null;
+					for(y = topPixel; y < bottomPixel; ++y)
+					{
+						bmp.setPixel(x, y, Palette.WL6[data[postStart + y] & 
+						                               0xff]);
+					}
 				}
 			}
+			mSpriteBitmapCache.put(n, bmp);
 		}
 		
 		return bmp;

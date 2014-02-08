@@ -3,7 +3,6 @@ package com.ichera.wolfviewer;
 import java.io.File;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.Rect;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -20,9 +19,7 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.ichera.wolfviewer.document.Document;
 import com.ichera.wolfviewer.document.LevelContainer;
@@ -57,9 +54,6 @@ View.OnClickListener
 	private GridLayout mGridLayout;
 	private VXScrollView mVerticalScroll;
 	private HXScrollView mHorizontalScroll;
-	private TextView mLevelNameLabel;
-	private ImageButton mPrevLevelButton;
-	private ImageButton mNextLevelButton;
 	
 	private Rect mViewRect;
 	private int mTileSize;
@@ -80,12 +74,6 @@ View.OnClickListener
         mGridLayout = (GridLayout)findViewById(R.id.grid_layout);
         mVerticalScroll = (VXScrollView)findViewById(R.id.vertical_scroll);
         mHorizontalScroll = (HXScrollView)findViewById(R.id.horizontal_scroll);
-        mLevelNameLabel = (TextView)findViewById(R.id.level_name_label);
-        mPrevLevelButton = (ImageButton)findViewById(R.id.prev_level_button);
-        mNextLevelButton = (ImageButton)findViewById(R.id.next_level_button);
-        
-        mPrevLevelButton.setOnClickListener(this);
-        mNextLevelButton.setOnClickListener(this);
         
         mHorizontalScroll.setScrollingEnabled(false);
         mVerticalScroll.setOnTouchListener(this);
@@ -159,8 +147,16 @@ View.OnClickListener
     			intent.putExtra(OpenActivity.EXTRA_CURRENT_PATH, 
     					mCurrentPath.getPath());
     		startActivityForResult(intent, REQUEST_OPEN_WOLF);
+    		return true;
     	}
-    		break;
+    	case R.id.action_prev:
+			mCurrentLevel--;
+			updateGridLayout();
+			return true;
+    	case R.id.action_next:
+			mCurrentLevel++;
+			updateGridLayout();
+			return true;
     	default:
     		break;
     	}
@@ -177,10 +173,14 @@ View.OnClickListener
     	else if(mCurrentLevel >= LevelContainer.NUMMAPS)
     		mCurrentLevel = LevelContainer.NUMMAPS - 1;
     	
-    	mLevelNameLabel.setText(mDocument.getLevels().getLevelName(mCurrentLevel));
+    	getSupportActionBar().setTitle(mDocument.getLevels().getLevelName(mCurrentLevel));
+    	
+    	int ceilingColour = Palette.WL6[LevelContainer.getCeilingColours()[mCurrentLevel]];
+    	
     	short[][] level = mDocument.getLevels().getLevel(mCurrentLevel);
     	
     	short[] wallplane = level[0];
+    	short[] actorplane = level[1];
     	
     	int x, y, texture, cell;
     	ImageView iv;
@@ -201,7 +201,7 @@ View.OnClickListener
     				gllp.columnSpec = GridLayout.spec(x);
     				gllp.rowSpec = GridLayout.spec(y);
     				iv.setLayoutParams(gllp);
-    				iv.setBackgroundColor(sFloorColour);
+    				
     				mTileViews[y][x] = iv;
     				iv.setId(LevelContainer.MAPSIZE * y + x);
     				mGridLayout.addView(iv);
@@ -215,10 +215,21 @@ View.OnClickListener
 	    			texture = 2 * (cell - 1);
 	    			if(texture >= 0 && texture < mDocument.getVSwap().getSpriteStart())
 	    			{
-	    				iv.setImageBitmap(mDocument.getVSwap().getTextureBitmap(texture));
+	    				iv.setImageBitmap(mDocument.getVSwap().getWallBitmap(texture));
 	    			}
 					else
-						iv.setImageBitmap(null);
+					{
+						cell = Global.getActorSpriteMap().get(
+								actorplane[y * LevelContainer.MAPSIZE + x], -1);
+						if(cell == -1)
+						{
+							iv.setImageBitmap(null);
+							
+						}
+						else
+							iv.setImageBitmap(mDocument.getVSwap().getSpriteBitmap(cell));
+						iv.setBackgroundColor(ceilingColour);
+					}
 				}
     		}
     }
@@ -267,7 +278,7 @@ View.OnClickListener
 			
 			if(position < mDocument.getVSwap().getSpriteStart())
 				iv.setImageBitmap(mDocument.getVSwap()
-						.getTextureBitmap(position));
+						.getWallBitmap(position));
 			else if(position < mDocument.getVSwap().getSoundStart())
 				iv.setImageBitmap(mDocument.getVSwap()
 						.getSpriteBitmap(position));
@@ -399,17 +410,6 @@ View.OnClickListener
 	@Override
 	public void onClick(View v) 
 	{
-		if(v == mPrevLevelButton && mCurrentLevel > 0)
-		{
-			mCurrentLevel--;
-			updateGridLayout();
-			return;
-		}
-		if(v == mNextLevelButton && mCurrentLevel < LevelContainer.NUMMAPS - 1)
-		{
-			mCurrentLevel++;
-			updateGridLayout();
-			return;
-		}
+	
 	}
 }
