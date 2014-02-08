@@ -16,6 +16,7 @@ public class LevelContainer
 	public static final int maparea = MAPSIZE * MAPSIZE;
 	
 	private short[][][] mLevels;
+	private String[] mLevelNames;
 	
 	public short getTile(int level, int plane, int x, int y)
 	{
@@ -40,6 +41,11 @@ public class LevelContainer
 	public short[][][] getLevels()
 	{
 		return mLevels;
+	}
+	
+	public String getLevelName(int n)
+	{
+		return mLevelNames[n];
 	}
 	
 	public boolean loadFile(File mapHead, File gameMaps)
@@ -67,8 +73,10 @@ public class LevelContainer
 			raf = new RandomAccessFile(gameMaps, "r");
 			int pos;
 			MapHeader newHeader = new MapHeader();
+			byte[] nameBuffer = new byte[16];
 			
-			short[][][] newLevels = new short[maparea][][];
+			short[][][] newLevels = new short[NUMMAPS][][];
+			String[] newLevelNames = new String[NUMMAPS];
 			for(int i = 0; i < NUMMAPS; ++i)
 			{
 				pos = headerOffsets[i];
@@ -82,7 +90,9 @@ public class LevelContainer
 				newHeader.planeLength[0] = Global.readUInt16(raf);
 				newHeader.planeLength[1] = Global.readUInt16(raf);
 				newHeader.planeLength[2] = Global.readUInt16(raf);
-				raf.skipBytes(2 + 2 + 16);
+				raf.skipBytes(2 + 2);
+				raf.read(nameBuffer);
+				newLevelNames[i] = new String(nameBuffer, "UTF-8");
 				
 				newLevels[i] = cacheMap(raf, newHeader, newRlewTag);
 				if(newLevels[i] == null)
@@ -90,6 +100,7 @@ public class LevelContainer
 			}
 			// All ok
 			mLevels = newLevels;
+			mLevelNames = newLevelNames;
 		}
 		catch(FileNotFoundException e)
 		{
@@ -175,5 +186,6 @@ public class LevelContainer
 	{
 		int planeStart[] = new int[3];
 		int planeLength[] = new int[3];
+		String name;
 	}
 }

@@ -4,6 +4,7 @@ import java.io.File;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -12,15 +13,22 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.GridLayout;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.ichera.wolfviewer.document.Document;
 import com.ichera.wolfviewer.document.LevelContainer;
+import com.ichera.wolfviewer.ui.HXScrollView;
+import com.ichera.wolfviewer.ui.ScrollViewListener;
+import com.ichera.wolfviewer.ui.VXScrollView;
 
 /**
  * Startup activity
@@ -28,13 +36,15 @@ import com.ichera.wolfviewer.document.LevelContainer;
  *
  */
 public class MainActivity extends ActionBarActivity implements 
-AdapterView.OnItemClickListener
+AdapterView.OnItemClickListener, ScrollViewListener, View.OnTouchListener,
+View.OnClickListener
 {
-	@SuppressWarnings("unused")
+//	@SuppressWarnings("unused")
 	private static final String TAG = "MainActivity";
 	
 	private static final int REQUEST_OPEN_WOLF = 1;
 	private static final String EXTRA_CURRENT_PATH = "currentPath";
+	private static final String EXTRA_CURRENT_LEVEL = "currentLevel";
 	
 	// saved
 	private File mCurrentPath;
@@ -45,9 +55,22 @@ AdapterView.OnItemClickListener
 	// nonsaved
 //	private GridView mGridView;
 	private GridLayout mGridLayout;
+	private VXScrollView mVerticalScroll;
+	private HXScrollView mHorizontalScroll;
+	private TextView mLevelNameLabel;
+	private ImageButton mPrevLevelButton;
+	private ImageButton mNextLevelButton;
+	
+	private Rect mViewRect;
+	private int mTileSize;
+	private ImageView[][] mTileViews;
+	private int mCurrentLevel;
 	
 	// sound engine
 	private AudioTrack mTrack;
+	
+	// static
+	private static int sFloorColour = Palette.WL6[25];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) 
@@ -55,10 +78,23 @@ AdapterView.OnItemClickListener
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mGridLayout = (GridLayout)findViewById(R.id.grid_layout);
+        mVerticalScroll = (VXScrollView)findViewById(R.id.vertical_scroll);
+        mHorizontalScroll = (HXScrollView)findViewById(R.id.horizontal_scroll);
+        mLevelNameLabel = (TextView)findViewById(R.id.level_name_label);
+        mPrevLevelButton = (ImageButton)findViewById(R.id.prev_level_button);
+        mNextLevelButton = (ImageButton)findViewById(R.id.next_level_button);
+        
+        mPrevLevelButton.setOnClickListener(this);
+        mNextLevelButton.setOnClickListener(this);
+        
+        mHorizontalScroll.setScrollingEnabled(false);
+        mVerticalScroll.setOnTouchListener(this);
+        mHorizontalScroll.setScrollViewListener(this);
+        mVerticalScroll.setScrollViewListener(this);
 //        mGridView = (GridView)findViewById(R.id.grid);
 //        mGridView.setOnItemClickListener(this);
 //        mGridView.setSoundEffectsEnabled(false);
-        findViewById(android.R.id.content).setBackgroundColor(Palette.WL6[25]);
+        findViewById(android.R.id.content).setBackgroundColor(sFloorColour);
         
         mDocument = Document.getInstance();
 //        mGridView.setAdapter(new GridAdapter());
@@ -68,11 +104,14 @@ AdapterView.OnItemClickListener
         	String value = savedInstanceState.getString(EXTRA_CURRENT_PATH);
         	if(value != null)
         		mCurrentPath = new File(value);
+        	mCurrentLevel = savedInstanceState.getInt(EXTRA_CURRENT_LEVEL);
         }
         
-        updateGridLayout();
-        
         Global.initialize(this);
+        
+        mTileSize = (int)(48 * Global.getScale());
+        
+        updateGridLayout();
     }
 
     @Override
@@ -80,6 +119,7 @@ AdapterView.OnItemClickListener
     {
     	if(mCurrentPath != null)
     		outState.putString(EXTRA_CURRENT_PATH, mCurrentPath.getPath());
+    	outState.putInt(EXTRA_CURRENT_LEVEL, mCurrentLevel);
     	super.onSaveInstanceState(outState);
     }
 
@@ -132,38 +172,54 @@ AdapterView.OnItemClickListener
     	if(!mDocument.isLoaded())
     		return;
     	
-    	mGridLayout.removeAllViews();
+    	if(mCurrentLevel < 0)
+    		mCurrentLevel = 0;
+    	else if(mCurrentLevel >= LevelContainer.NUMMAPS)
+    		mCurrentLevel = LevelContainer.NUMMAPS - 1;
     	
-    	short[][] level = mDocument.getLevels().getLevel(0);
+    	mLevelNameLabel.setText(mDocument.getLevels().getLevelName(mCurrentLevel));
+    	short[][] level = mDocument.getLevels().getLevel(mCurrentLevel);
     	
     	short[] wallplane = level[0];
     	
     	int x, y, texture, cell;
     	ImageView iv;
     	GridLayout.LayoutParams gllp;
+    	    	
+    	if(mTileViews == null)
+    		mTileViews = new ImageView[LevelContainer.MAPSIZE][LevelContainer.MAPSIZE];
+    	
     	for(x = 0; x < LevelContainer.MAPSIZE; ++x)
     		for(y = 0; y < LevelContainer.MAPSIZE; ++y)
     		{
-    			iv = new ImageView(this);
-    			gllp = new GridLayout.LayoutParams();
-    			gllp.width = (int)(64 * Global.getScale());
-				gllp.height = (int)(64 * Global.getScale());
-				gllp.columnSpec = GridLayout.spec(x);
-				gllp.rowSpec = GridLayout.spec(y);
-				iv.setLayoutParams(gllp);
-				iv.setBackgroundColor(Color.BLACK);
+    			if(mTileViews[y][x] == null)
+    			{
+    				iv = new ImageView(this);
+        			gllp = new GridLayout.LayoutParams();
+        			gllp.width = mTileSize;
+    				gllp.height = mTileSize;
+    				gllp.columnSpec = GridLayout.spec(x);
+    				gllp.rowSpec = GridLayout.spec(y);
+    				iv.setLayoutParams(gllp);
+    				iv.setBackgroundColor(sFloorColour);
+    				mTileViews[y][x] = iv;
+    				iv.setId(LevelContainer.MAPSIZE * y + x);
+    				mGridLayout.addView(iv);
+    			}
+    			else
+    				iv = mTileViews[y][x];
 				
-				cell = wallplane[y * LevelContainer.MAPSIZE + x];
-				if(cell > 0)
+//				if(x >= xmin && x <= xmax && y >= ymin && y <= ymax)
 				{
+					cell = wallplane[y * LevelContainer.MAPSIZE + x];
 	    			texture = 2 * (cell - 1);
-	    			if(texture < mDocument.getVSwap().getSpriteStart())
+	    			if(texture >= 0 && texture < mDocument.getVSwap().getSpriteStart())
 	    			{
 	    				iv.setImageBitmap(mDocument.getVSwap().getTextureBitmap(texture));
 	    			}
+					else
+						iv.setImageBitmap(null);
 				}
-    			
-    			mGridLayout.addView(iv);
     		}
     }
     
@@ -262,5 +318,98 @@ AdapterView.OnItemClickListener
 		if(mTrack != null)
 			mTrack.release();
 		mGridLayout.removeAllViews();
+	}
+
+	@Override
+	public void onScrollChanged(FrameLayout scrollView, int px, int py, int poldx,
+			int poldy) 
+	{
+//		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
+//		{
+//			// deltay is 0 OR deltax is 0
+//			int oldx = poldx / mTileSize;
+//			int x = px / mTileSize;
+//			int oldy = poldy/ mTileSize;
+//			int y = py / mTileSize;
+//			int i, j;
+//			int cmin, cmax, vmin, vmax;
+//			if(x != oldx)
+//			{
+//				cmin = py / mTileSize;
+//				cmax = (py + mVerticalScroll.getHeight()) / mTileSize;
+//				// tiles disappeared from view
+//				for(i = cmin; i <= cmax; ++i)
+//				{
+//					vmin = Math.min(oldx, x);
+//					vmax = Math.max(oldx, x);
+//					for(j = vmin; j <= vmax; ++j)
+//					{
+//						mTileViews[i][j].setImageDrawable(null);
+//					}
+//					x = (px + mHorizontalScroll.getWidth()) / mTileSize;
+//					oldx = (poldx + mHorizontalScroll.getWidth()) / mTileSize;
+//					vmin = Math.min(oldx, x);
+//					vmax = Math.max(oldx, x);
+//					for(j = vmin; j <= vmax; ++j)
+//					{
+//						mTileViews[i][j].setImageDrawable(null);
+//					}
+//				}
+//				
+//			}
+//			else if(y != oldy)
+//			{
+//				cmin = px / mTileSize;
+//				cmax = (px + mHorizontalScroll.getWidth()) / mTileSize;
+//				for(i = cmin; i <= cmax; ++i)
+//				{
+//					vmin = Math.min(oldy, y);
+//					vmax = Math.max(oldy, y);
+//					for(j = vmin; j <= vmax; ++j)
+//					{
+//						mTileViews[j][i].setImageDrawable(null);
+//					}
+//					y = (py + mVerticalScroll.getHeight()) / mTileSize;
+//					oldy = (poldy + mVerticalScroll.getHeight()) / mTileSize;
+//					vmin = Math.min(oldy, y);
+//					vmax = Math.max(oldy, y);
+//					for(j = vmin; j <= vmax; ++j)
+//					{
+//						mTileViews[j][i].setImageDrawable(null);
+//					}
+//				}
+//			}
+//		}
+	}
+
+	@Override
+	public boolean onTouch(View v, MotionEvent event) 
+	{
+		if(v == mVerticalScroll)
+		{
+			// LOL trickery
+			mHorizontalScroll.setScrollingEnabled(true);
+			mHorizontalScroll.dispatchTouchEvent(event);
+			mHorizontalScroll.setScrollingEnabled(false);
+			return false;
+		}
+		return false;
+	}
+
+	@Override
+	public void onClick(View v) 
+	{
+		if(v == mPrevLevelButton && mCurrentLevel > 0)
+		{
+			mCurrentLevel--;
+			updateGridLayout();
+			return;
+		}
+		if(v == mNextLevelButton && mCurrentLevel < LevelContainer.NUMMAPS - 1)
+		{
+			mCurrentLevel++;
+			updateGridLayout();
+			return;
+		}
 	}
 }
