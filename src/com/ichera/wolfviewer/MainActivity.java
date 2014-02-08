@@ -134,7 +134,7 @@ AdapterView.OnItemClickListener
     	
     	mGridLayout.removeAllViews();
     	
-    	short[][] level = mDocument.getLevels().getLevel(9);
+    	short[][] level = mDocument.getLevels().getLevel(0);
     	
     	short[] wallplane = level[0];
     	
@@ -153,7 +153,7 @@ AdapterView.OnItemClickListener
 				iv.setLayoutParams(gllp);
 				iv.setBackgroundColor(Color.BLACK);
 				
-				cell = wallplane[x * LevelContainer.MAPSIZE + y];
+				cell = wallplane[y * LevelContainer.MAPSIZE + x];
 				if(cell > 0)
 				{
 	    			texture = 2 * (cell - 1);

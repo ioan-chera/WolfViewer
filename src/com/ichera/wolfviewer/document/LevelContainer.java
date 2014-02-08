@@ -19,7 +19,7 @@ public class LevelContainer
 	
 	public short getTile(int level, int plane, int x, int y)
 	{
-		return mLevels[level][plane][x * MAPSIZE + y];
+		return mLevels[level][plane][y * MAPSIZE + x];
 	}
 	
 	public short getTile(int level, int plane, int i)
