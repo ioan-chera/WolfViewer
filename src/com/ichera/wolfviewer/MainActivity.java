@@ -7,6 +7,7 @@ import android.graphics.Rect;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.GridLayout;
@@ -20,6 +21,8 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.ichera.wolfviewer.document.Document;
 import com.ichera.wolfviewer.document.LevelContainer;
@@ -54,11 +57,16 @@ View.OnClickListener
 	private GridLayout mGridLayout;
 	private VXScrollView mVerticalScroll;
 	private HXScrollView mHorizontalScroll;
+	private ProgressBar mProgressIndicator;
+	private TextView mProgressInfoLabel;
 	
 	private Rect mViewRect;
 	private int mTileSize;
 	private ImageView[][] mTileViews;
 	private int mCurrentLevel;
+	
+	// workers
+	private DocumentLoadAsyncTask mDocumentLoadAsyncTask;
 	
 	// sound engine
 	private AudioTrack mTrack;
@@ -74,6 +82,8 @@ View.OnClickListener
         mGridLayout = (GridLayout)findViewById(R.id.grid_layout);
         mVerticalScroll = (VXScrollView)findViewById(R.id.vertical_scroll);
         mHorizontalScroll = (HXScrollView)findViewById(R.id.horizontal_scroll);
+        mProgressIndicator = (ProgressBar)findViewById(R.id.progress_indicator);
+        mProgressInfoLabel = (TextView)findViewById(R.id.progress_info_label);
         
         mHorizontalScroll.setScrollingEnabled(false);
         mVerticalScroll.setOnTouchListener(this);
@@ -127,11 +137,14 @@ View.OnClickListener
     	if(requestCode == REQUEST_OPEN_WOLF && resultCode == RESULT_OK)
     	{
     		mCurrentPath = new File(data.getStringExtra(OpenActivity.EXTRA_CURRENT_PATH));
-    		if(!mDocument.loadFromDirectory(mCurrentPath))
-    			Global.showErrorAlert(this, "Error", "Cannot open document " + mCurrentPath);
+    		
+    		if(mDocumentLoadAsyncTask != null)
+    			Global.showErrorAlert(this, "", "A document is currently opening.");
     		else
-    			updateGridLayout();
-//    			((BaseAdapter)mGridView.getAdapter()).notifyDataSetChanged();
+    		{
+    			mDocumentLoadAsyncTask = new DocumentLoadAsyncTask();
+    			mDocumentLoadAsyncTask.execute(mCurrentPath);
+    		}
     	}
     }
     
@@ -411,5 +424,47 @@ View.OnClickListener
 	public void onClick(View v) 
 	{
 	
+	}
+	
+	private class DocumentLoadAsyncTask extends AsyncTask<File, String, Boolean>
+	{
+		@Override
+		protected void onPreExecute()
+		{
+			mProgressIndicator.setVisibility(View.VISIBLE);
+			mProgressInfoLabel.setVisibility(View.VISIBLE);
+			mProgressInfoLabel.setText("");
+		}
+		
+		@Override
+		protected Boolean doInBackground(File... params) 
+		{
+			return mDocument.loadFromDirectory(params[0], new RunnableArg<String>() {
+				@Override
+				public void run() 
+				{
+					publishProgress(mArgs);
+				}
+			});
+		}
+		
+		@Override
+		protected void onProgressUpdate(String... values)
+		{
+			mProgressInfoLabel.setText(values[0]);
+		}
+		
+		@Override
+		protected void onPostExecute(Boolean result)
+		{
+			mDocumentLoadAsyncTask = null;
+			mProgressIndicator.setVisibility(View.GONE);
+			mProgressInfoLabel.setVisibility(View.GONE);
+			if(result)
+				updateGridLayout();
+			else
+				Global.showErrorAlert(MainActivity.this, 
+						"", "Can't open document " + mCurrentPath);
+		}
 	}
 }

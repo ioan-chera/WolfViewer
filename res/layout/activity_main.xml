@@ -1,9 +1,8 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".MainActivity" >
+    android:orientation="vertical">
     
     <com.ichera.wolfviewer.ui.VXScrollView android:id="@+id/vertical_scroll"
         android:layout_width="match_parent"
@@ -19,6 +18,17 @@
         </com.ichera.wolfviewer.ui.HXScrollView>
     </com.ichera.wolfviewer.ui.VXScrollView>
     
+    <TextView android:id="@+id/progress_info_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"/>
+    <ProgressBar android:id="@+id/progress_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:indeterminate="true"
+        android:visibility="gone"/>
+    
     
     <!-- 
     <GridView android:id="@+id/grid"
@@ -28,4 +38,4 @@
         android:horizontalSpacing="2dp"
         android:verticalSpacing="2dp"/>
 	-->
-</LinearLayout>
+</RelativeLayout>

@@ -2,6 +2,8 @@ package com.ichera.wolfviewer.document;
 
 import java.io.File;
 
+import com.ichera.wolfviewer.RunnableArg;
+
 /**
  * Singleton document instance of this program. Manages all classes related
  * to the game
@@ -55,12 +57,14 @@ public class Document
 	 * @param directory Directory containing Wolfenstein files
 	 * @return True on success
 	 */
-	public boolean loadFromDirectory(File directory)
+	public boolean loadFromDirectory(File directory, RunnableArg<String> progressUpdater)
 	{
 		if(!directory.isDirectory())
 			return false;
 		
 		// First check if files exist
+		if(progressUpdater != null)
+			progressUpdater.run("Checking for files...");
 		File vSwapFile = new File(directory, "vswap.wl6");
 		if(!vSwapFile.exists())
 			return false;
@@ -72,11 +76,15 @@ public class Document
 			return false;
 		
 		// Try loading vswap container
+		if(progressUpdater != null)
+			progressUpdater.run("Loading VSWAP file...");
 		VSwapContainer vswap = new VSwapContainer();
 		if(!vswap.loadFile(vSwapFile))
 			return false;
 		
 		// Try loading level container
+		if(progressUpdater != null)
+			progressUpdater.run("Loading MAPHEAD and GAMEMAPS files...");
 		LevelContainer levels = new LevelContainer();
 		if(!levels.loadFile(mapHeadFile, gameMapsFile))
 			return false;
