@@ -225,24 +225,36 @@ View.OnClickListener
 //				if(x >= xmin && x <= xmax && y >= ymin && y <= ymax)
 				{
 					cell = wallplane[y * LevelContainer.MAPSIZE + x];
-	    			texture = 2 * (cell - 1);
-	    			if(texture >= 0 && texture < mDocument.getVSwap().getSpriteStart())
-	    			{
-	    				iv.setImageBitmap(mDocument.getVSwap().getWallBitmap(texture));
-	    			}
+					if(cell >= 90 && cell <= 100 && cell % 2 == 0)
+					{
+						iv.setImageResource(R.drawable.door_vertical);
+					}
+					else if(cell >= 91 && cell <= 101 && cell % 2 == 1)
+					{
+						iv.setImageResource(R.drawable.door_horizontal);
+					}
 					else
 					{
-						cell = Global.getActorSpriteMap().get(
-								actorplane[y * LevelContainer.MAPSIZE + x], -1);
-						if(cell == -1)
+		    			texture = 2 * (cell - 1);
+		    			if(texture >= 0 && texture < mDocument.getVSwap().getSpriteStart())
+		    			{
+		    				iv.setImageBitmap(mDocument.getVSwap().getWallBitmap(texture));
+		    			}
+						else
 						{
-							iv.setImageBitmap(null);
+							cell = Global.getActorSpriteMap().get(
+									actorplane[y * LevelContainer.MAPSIZE + x], -1);
+							if(cell == -1)
+							{
+								iv.setImageBitmap(null);
+								
+							}
+							else
+								iv.setImageBitmap(mDocument.getVSwap().getSpriteBitmap(cell));
 							
 						}
-						else
-							iv.setImageBitmap(mDocument.getVSwap().getSpriteBitmap(cell));
-						iv.setBackgroundColor(ceilingColour);
 					}
+					iv.setBackgroundColor(ceilingColour);
 				}
     		}
     }
