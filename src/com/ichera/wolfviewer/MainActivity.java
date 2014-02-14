@@ -3,25 +3,23 @@ package com.ichera.wolfviewer;
 import java.io.File;
 
 import android.content.Intent;
+import android.graphics.Point;
 import android.graphics.Rect;
-import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.widget.GridLayout;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AbsListView;
-import android.widget.AdapterView;
-import android.widget.BaseAdapter;
+import android.view.ViewTreeObserver;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.ichera.wolfviewer.document.Document;
@@ -29,6 +27,7 @@ import com.ichera.wolfviewer.document.LevelContainer;
 import com.ichera.wolfviewer.ui.HXScrollView;
 import com.ichera.wolfviewer.ui.ScrollViewListener;
 import com.ichera.wolfviewer.ui.VXScrollView;
+import com.ichera.wolfviewer.ui.VisibilityGrid;
 
 /**
  * Startup activity
@@ -36,15 +35,16 @@ import com.ichera.wolfviewer.ui.VXScrollView;
  *
  */
 public class MainActivity extends ActionBarActivity implements 
-AdapterView.OnItemClickListener, ScrollViewListener, View.OnTouchListener,
-View.OnClickListener
+ScrollViewListener, View.OnTouchListener, View.OnClickListener, 
+VisibilityGrid.Delegate
 {
-//	@SuppressWarnings("unused")
-	private static final String TAG = "MainActivity";
+	static final String TAG = "MainActivity";
 	
 	private static final int REQUEST_OPEN_WOLF = 1;
 	private static final String EXTRA_CURRENT_PATH = "currentPath";
 	private static final String EXTRA_CURRENT_LEVEL = "currentLevel";
+	private static final String EXTRA_SCROLL_X = "scrollX";
+	private static final String EXTRA_SCROLL_Y = "scrollY";
 	
 	// saved
 	private File mCurrentPath;
@@ -54,7 +54,7 @@ View.OnClickListener
 	
 	// nonsaved
 //	private GridView mGridView;
-	private GridLayout mGridLayout;
+	private RelativeLayout mGridLayout;
 	private VXScrollView mVerticalScroll;
 	private HXScrollView mHorizontalScroll;
 	private ProgressBar mProgressIndicator;
@@ -64,6 +64,8 @@ View.OnClickListener
 	private int mTileSize;
 	private ImageView[][] mTileViews;
 	private int mCurrentLevel;
+	private Point mViewportSize;
+	private VisibilityGrid mVisGrid;
 	
 	// workers
 	private DocumentLoadAsyncTask mDocumentLoadAsyncTask;
@@ -75,11 +77,12 @@ View.OnClickListener
 	private static int sFloorColour = Palette.WL6[25];
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) 
+    protected void onCreate(final Bundle savedInstanceState) 
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mGridLayout = (GridLayout)findViewById(R.id.grid_layout);
+        
+        mGridLayout = (RelativeLayout)findViewById(R.id.grid_layout);
         mVerticalScroll = (VXScrollView)findViewById(R.id.vertical_scroll);
         mHorizontalScroll = (HXScrollView)findViewById(R.id.horizontal_scroll);
         mProgressIndicator = (ProgressBar)findViewById(R.id.progress_indicator);
@@ -108,8 +111,35 @@ View.OnClickListener
         Global.initialize(this);
         
         mTileSize = (int)(48 * Global.getScale());
+        mGridLayout.getLayoutParams().width = 
+    			mGridLayout.getLayoutParams().height = LevelContainer.MAPSIZE *
+    			mTileSize;
         
-        updateGridLayout();
+        
+        ViewTreeObserver observer = mVerticalScroll.getViewTreeObserver();
+        observer.addOnGlobalLayoutListener(new OnGlobalLayoutListener() 
+        {
+        	// Can't get rid of warning otherwise. Can't use the recommended
+        	// function here
+            @SuppressWarnings("deprecation")
+			@Override
+            public void onGlobalLayout() 
+            {
+            	mVerticalScroll.getViewTreeObserver()
+            			.removeGlobalOnLayoutListener(this);
+            	mViewportSize = new Point(mVerticalScroll.getMeasuredWidth(), 
+            			mVerticalScroll.getMeasuredHeight());
+            	if(savedInstanceState != null)
+                {
+                	Log.i(TAG, "Recovered: " + savedInstanceState.getInt(EXTRA_SCROLL_X) + " " + savedInstanceState.getInt(EXTRA_SCROLL_Y));
+                	mHorizontalScroll.scrollTo(savedInstanceState.getInt(EXTRA_SCROLL_X), 0);
+                	mVerticalScroll.scrollTo(0, savedInstanceState.getInt(EXTRA_SCROLL_Y));
+                }
+            	updateGridLayout();
+            }
+        });
+        
+        
     }
 
     @Override
@@ -118,6 +148,9 @@ View.OnClickListener
     	if(mCurrentPath != null)
     		outState.putString(EXTRA_CURRENT_PATH, mCurrentPath.getPath());
     	outState.putInt(EXTRA_CURRENT_LEVEL, mCurrentLevel);
+    	outState.putInt(EXTRA_SCROLL_X, mHorizontalScroll.getScrollX());
+    	outState.putInt(EXTRA_SCROLL_Y, mVerticalScroll.getScrollY());
+    	
     	super.onSaveInstanceState(outState);
     }
 
@@ -190,162 +223,148 @@ View.OnClickListener
     	
     	int ceilingColour = Palette.WL6[LevelContainer.getCeilingColours()[mCurrentLevel]];
     	
-    	short[][] level = mDocument.getLevels().getLevel(mCurrentLevel);
     	
-    	short[] wallplane = level[0];
-    	short[] actorplane = level[1];
     	
-    	int x, y, texture, cell;
-    	ImageView iv;
-    	GridLayout.LayoutParams gllp;
-    	    	
-    	if(mTileViews == null)
-    		mTileViews = new ImageView[LevelContainer.MAPSIZE][LevelContainer.MAPSIZE];
     	
-    	for(x = 0; x < LevelContainer.MAPSIZE; ++x)
-    		for(y = 0; y < LevelContainer.MAPSIZE; ++y)
-    		{
-    			if(mTileViews[y][x] == null)
-    			{
-    				iv = new ImageView(this);
-        			gllp = new GridLayout.LayoutParams();
-        			gllp.width = mTileSize;
-    				gllp.height = mTileSize;
-    				gllp.columnSpec = GridLayout.spec(x);
-    				gllp.rowSpec = GridLayout.spec(y);
-    				iv.setLayoutParams(gllp);
-    				
-    				mTileViews[y][x] = iv;
-    				iv.setId(LevelContainer.MAPSIZE * y + x);
-    				mGridLayout.addView(iv);
-    			}
-    			else
-    				iv = mTileViews[y][x];
-				
-//				if(x >= xmin && x <= xmax && y >= ymin && y <= ymax)
-				{
-					cell = wallplane[y * LevelContainer.MAPSIZE + x];
-					if(cell >= 90 && cell <= 100 && cell % 2 == 0)
-					{
-						iv.setImageResource(R.drawable.door_vertical);
-					}
-					else if(cell >= 91 && cell <= 101 && cell % 2 == 1)
-					{
-						iv.setImageResource(R.drawable.door_horizontal);
-					}
-					else
-					{
-		    			texture = 2 * (cell - 1);
-		    			if(texture >= 0 && texture < mDocument.getVSwap().getSpriteStart())
-		    			{
-		    				iv.setImageBitmap(mDocument.getVSwap().getWallBitmap(texture));
-		    			}
-						else
-						{
-							cell = Global.getActorSpriteMap().get(
-									actorplane[y * LevelContainer.MAPSIZE + x], -1);
-							if(cell == -1)
-							{
-								iv.setImageBitmap(null);
-								
-							}
-							else
-								iv.setImageBitmap(mDocument.getVSwap().getSpriteBitmap(cell));
-							
-						}
-					}
-					iv.setBackgroundColor(ceilingColour);
-				}
-    		}
+    	mGridLayout.setBackgroundColor(ceilingColour);
+    	
+    	Point viewportPosition = new Point(mHorizontalScroll.getScrollX(), 
+    			mVerticalScroll.getScrollY());
+    	Log.i(TAG, "Point: " + viewportPosition);
+    	Rect viewportRect = new Rect(viewportPosition.x, 
+    			viewportPosition.y, viewportPosition.x + mViewportSize.x, 
+    			viewportPosition.y + mViewportSize.y);
+    	mGridLayout.removeAllViews();
+    	if(mVisGrid == null)
+    		mVisGrid = new VisibilityGrid();
+    	
+    	mVisGrid.create(new Point(LevelContainer.MAPSIZE * mTileSize, 
+    			LevelContainer.MAPSIZE * mTileSize), viewportRect, mTileSize, this);
+    	
     }
     
-    /**
-     * Adapter for the grid view
-     * @author ioan
-     *
-     */
-    private class GridAdapter extends BaseAdapter
+    @Override
+    public void clearVisTiles()
     {
-
-		@Override
-		public int getCount() 
-		{
-			return mDocument.isLoaded() ? mDocument.getVSwap().getNumChunks() : 
-				0;
-		}
-
-		@Override
-		public Object getItem(int position) 
-		{
-			return mDocument.isLoaded() ? mDocument.getVSwap().getPage(position) 
-					: null;
-		}
-
-		@Override
-		public long getItemId(int position) 
-		{
-			return position;
-		}
-
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) 
-		{
-			ImageView iv;
-			if(convertView == null)
-			{
-				iv = new ImageView(MainActivity.this);
-				iv.setLayoutParams(new AbsListView.LayoutParams(
-						(int)(64 * Global.getScale()), (int)(64 * Global.getScale())));
-				
-			}
-			else
-				iv = (ImageView)convertView;
-			
-			if(position < mDocument.getVSwap().getSpriteStart())
-				iv.setImageBitmap(mDocument.getVSwap()
-						.getWallBitmap(position));
-			else if(position < mDocument.getVSwap().getSoundStart())
-				iv.setImageBitmap(mDocument.getVSwap()
-						.getSpriteBitmap(position));
-			else
-				iv.setImageResource(R.drawable.ic_action_play);
-			return iv;
-		}
-    	
+    	if(mTileViews == null)
+    		mTileViews = new ImageView[LevelContainer.MAPSIZE][LevelContainer.MAPSIZE];
+    	else
+    		for(int i = 0; i < LevelContainer.MAPSIZE; ++i)
+    			for(int j = 0; j < LevelContainer.MAPSIZE; ++j)
+    				mTileViews[i][j] = null;
     }
 
 	@Override
-	public void onItemClick(AdapterView<?> parent, View v, int position, long id) 
+	public void createVisTile(int i, int j) 
 	{
-		if(!mDocument.isLoaded())
-			return;
-		if(position >= mDocument.getVSwap().getSoundStart())
+		int ms = LevelContainer.MAPSIZE - 1;
+		if(!Global.inBounds(i, 0, ms) || !Global.inBounds(i, 0, ms))
 		{
-			try
+//			Log.d(TAG, "Refused create " + i + " " + j);
+			return;
+		}
+		mTileViews[i][j] = new ImageView(this);
+		RelativeLayout.LayoutParams rllp = new RelativeLayout.LayoutParams(
+				mTileSize, mTileSize);
+		rllp.leftMargin = j * mTileSize;
+		rllp.topMargin = i * mTileSize;
+		mTileViews[i][j].setLayoutParams(rllp);
+		mGridLayout.addView(mTileViews[i][j]);
+		
+		updateGraphics(mTileViews[i][j], j, i);
+	}
+
+	@Override
+	public void moveVisTile(int i1, int j1, int i2, int j2) 
+	{
+		int ms = LevelContainer.MAPSIZE - 1;
+		if(!Global.inBounds(i2, 0, ms) || !Global.inBounds(j2, 0, ms))
+		{
+//			Log.d(TAG, "Refused move " + i1 + " " + j1 + " " + i2 + " " + j2);
+			return;
+		}
+		ImageView iv = null;
+		if(Global.inBounds(i1, 0, ms) && Global.inBounds(j1, 0, ms))
+			iv= mTileViews[i1][j1];
+		// let's be careful, okay?
+		if(iv == null)
+		{
+			// either just create or update
+			iv = mTileViews[i2][j2];
+			if(iv == null)
+				createVisTile(i2, j2);
+			else
+				updateGraphics(iv, j2, i2);
+		}
+		else
+		{
+			// delete or move
+			ImageView iv2 = mTileViews[i2][j2];
+			if(iv2 == null)
 			{
-				if(mTrack != null)
-				{
-					mTrack.release();
-					mTrack = null;
-				}
-				mTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 
-							Global.SOUND_SAMPLE_RATE_HZ, AudioFormat.CHANNEL_OUT_MONO, 
-							AudioFormat.ENCODING_PCM_8BIT, 
-							mDocument.getVSwap().getPage(position).length, 
-							AudioTrack.MODE_STATIC);
+				RelativeLayout.LayoutParams rllp = (RelativeLayout.LayoutParams)
+						iv.getLayoutParams();
+				rllp.leftMargin = j2 * mTileSize;
+				rllp.topMargin = i2 * mTileSize;
+				mTileViews[i1][j1] = null;
+				mTileViews[i2][j2] = iv;
 				
-				mTrack.write(mDocument.getVSwap().getPage(position), 0, 
-						mDocument.getVSwap().getPage(position).length);
-				mTrack.play();
+//				mGridLayout.invalidate(new Rect(rllp.leftMargin, rllp.topMargin, 
+//						rllp.leftMargin + mTileSize, rllp.topMargin + mTileSize));
+				updateGraphics(iv, j2, i2);
 			}
-			catch(IllegalStateException e)
+			else
 			{
-				Global.showErrorAlert(this, "Can't play sound", 
-						"Unavailable audio player");
-				e.printStackTrace();
+				// delete the old one
+				mGridLayout.removeView(iv);
+				mTileViews[i1][j1] = null;
+				updateGraphics(iv2, j2, i2);
 			}
 		}
 	}
+	
+	@Override
+	public void finalizeMoveVisTiles()
+	{
+		mGridLayout.requestLayout();
+	}
+	
+	private void updateGraphics(ImageView iv, int x, int y)
+	{
+		short[][] level = mDocument.getLevels().getLevel(mCurrentLevel);
+    	
+    	short[] wallplane = level[0];
+    	short[] actorplane = level[1];
+		
+    	int texture;
+		int cell = wallplane[y * LevelContainer.MAPSIZE + x];
+		if(cell >= 90 && cell <= 100 && cell % 2 == 0)
+		{
+			iv.setImageResource(R.drawable.door_vertical);
+		}
+		else if(cell >= 91 && cell <= 101 && cell % 2 == 1)
+		{
+			iv.setImageResource(R.drawable.door_horizontal);
+		}
+		else
+		{
+			texture = 2 * (cell - 1);
+			if(texture >= 0 && texture < mDocument.getVSwap().getSpriteStart())
+			{
+				iv.setImageBitmap(mDocument.getVSwap().getWallBitmap(texture));
+			}
+			else
+			{
+				cell = Global.getActorSpriteMap().get(
+						actorplane[y * LevelContainer.MAPSIZE + x], -1);
+				if(cell == -1)
+					iv.setImageBitmap(null);
+				else
+					iv.setImageBitmap(mDocument.getVSwap().getSpriteBitmap(cell));
+			}
+		}
+	}
+
 	
 	@Override
 	public void onDestroy()
@@ -357,9 +376,32 @@ View.OnClickListener
 	}
 
 	@Override
-	public void onScrollChanged(FrameLayout scrollView, int px, int py, int poldx,
-			int poldy) 
+	public void onScrollChanged(FrameLayout scrollView, int x, int y, int oldx,
+			int oldy) 
 	{
+		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
+		{
+			if(mDocument == null || !mDocument.isLoaded())
+				return;
+			if(mVisGrid == null)
+				return;
+			
+			oldx /= mTileSize;
+			x /= mTileSize;
+			oldy /= mTileSize;
+			y /= mTileSize;
+			
+			x = Global.boundValue(x, 0, LevelContainer.MAPSIZE - 1);
+			y = Global.boundValue(y, 0, LevelContainer.MAPSIZE - 1);
+			oldx = Global.boundValue(oldx, 0, LevelContainer.MAPSIZE - 1);
+			oldy = Global.boundValue(oldy, 0, LevelContainer.MAPSIZE - 1);
+			
+			if(x != oldx)
+				mVisGrid.columnUpdate(oldx, x);
+			else if(y != oldy)
+				mVisGrid.rowUpdate(oldy, y);
+		}
+		
 //		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
 //		{
 //			// deltay is 0 OR deltax is 0
@@ -479,4 +521,5 @@ View.OnClickListener
 						"", "Can't open document " + mCurrentPath);
 		}
 	}
+
 }

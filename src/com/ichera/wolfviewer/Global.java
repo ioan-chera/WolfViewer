@@ -336,4 +336,18 @@ public class Global
 		
 		return dest;
 	}
+	
+	public static int boundValue(int val, int min, int max)
+	{
+		if(val < min)
+			val = min;
+		else if(val > max)
+			val = max;
+		return val;
+	}
+	
+	public static boolean inBounds(int val, int min, int max)
+	{
+		return val >= min && val <= max;
+	}
 }
