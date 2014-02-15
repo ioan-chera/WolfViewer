@@ -30,6 +30,8 @@ import android.os.Environment;
 import android.os.Parcelable;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -127,6 +129,32 @@ AdapterView.OnItemClickListener, View.OnClickListener
 		mListView.setAdapter(mAdapter);
 		mListView.setOnItemClickListener(this);
 	}
+	
+	@Override
+    public boolean onCreateOptionsMenu(Menu menu) 
+    {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.open, menu);
+        return true;
+    }
+	
+	@Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+    	switch(item.getItemId())
+    	{
+    	case R.id.action_up_one_level:
+    	{
+    		File superdir = mCurrentPath.getParentFile();
+    		if(superdir != null)
+    			changeDirectory(superdir);
+    		return true;
+    	}
+    	default:
+    		break;
+    	}
+    	return super.onOptionsItemSelected(item);
+    }
 	
 	@Override
 	protected void onSaveInstanceState (Bundle outState)
@@ -291,7 +319,18 @@ AdapterView.OnItemClickListener, View.OnClickListener
 //					lookForRelevantFiles(subdir, relevantFiles);
 //			}
 //		}
-		
+	
+	private void changeDirectory(File dir)
+	{
+		if(mFolderStack == null)
+			mFolderStack = new Stack<FolderState>();
+		FolderState fs = new FolderState();
+		fs.listInstanceState = mListView.onSaveInstanceState();
+		fs.path = mCurrentPath;
+		mFolderStack.push(fs);
+		mCurrentPath = dir;
+		mAdapter.setFileList(mCurrentPath);
+	}
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, 
@@ -300,14 +339,7 @@ AdapterView.OnItemClickListener, View.OnClickListener
 		File dir =  (File)mAdapter.getItem(position);
 		if(dir.isDirectory())
 		{
-			if(mFolderStack == null)
-				mFolderStack = new Stack<FolderState>();
-			FolderState fs = new FolderState();
-			fs.listInstanceState = mListView.onSaveInstanceState();
-			fs.path = mCurrentPath;
-			mFolderStack.push(fs);
-			mCurrentPath = dir;
-			mAdapter.setFileList(mCurrentPath);
+			changeDirectory(dir);
 		}
 	}
 

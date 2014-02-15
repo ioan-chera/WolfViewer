@@ -8,6 +8,7 @@
     <string name="action_open">Open</string>
     <string name="action_next">Next</string>
     <string name="action_prev">Previous</string>
+    <string name="action_up_one_level">Up one level</string>
     <string name="message_no_wolf3d_dir_found">No Wolfenstein 3D directories found in your device.</string>
     
     <string name="hello_world">Hello world!</string>
