@@ -78,7 +78,6 @@ VisibilityGrid.Delegate
 	private ProgressBar mProgressIndicator;
 	private TextView mProgressInfoLabel;
 	
-	private Rect mViewRect;
 	private int mTileSize;
 	private ImageView[][] mTileViews;
 	private int mCurrentLevel;
@@ -276,7 +275,7 @@ VisibilityGrid.Delegate
 	public void createVisTile(int i, int j) 
 	{
 		int ms = LevelContainer.MAPSIZE - 1;
-		if(!Global.inBounds(i, 0, ms) || !Global.inBounds(i, 0, ms))
+		if(!Global.inBounds(i, 0, ms) || !Global.inBounds(j, 0, ms))
 		{
 //			Log.d(TAG, "Refused create " + i + " " + j);
 			return;

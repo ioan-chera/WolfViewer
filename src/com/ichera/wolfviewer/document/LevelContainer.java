@@ -221,6 +221,5 @@ public class LevelContainer
 	{
 		int planeStart[] = new int[3];
 		int planeLength[] = new int[3];
-		String name;
 	}
 }

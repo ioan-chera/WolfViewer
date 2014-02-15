@@ -20,7 +20,6 @@ package com.ichera.wolfviewer.ui;
 
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.util.Log;
 
 import com.ichera.wolfviewer.Global;
 
