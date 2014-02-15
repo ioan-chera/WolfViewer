@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    <com.ichera.wolfviewer.ui.VXScrollView android:id="@+id/vertical_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <com.ichera.wolfviewer.ui.HXScrollView android:id="@+id/horizontal_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <RelativeLayout android:id="@+id/grid_layout"
+		        android:layout_width="0dp"
+		        android:layout_height="0dp"/>
+        </com.ichera.wolfviewer.ui.HXScrollView>
+    </com.ichera.wolfviewer.ui.VXScrollView>
+    
+
+</RelativeLayout>

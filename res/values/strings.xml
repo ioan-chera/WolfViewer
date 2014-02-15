@@ -14,4 +14,7 @@
     
     <string name="open_folder">Open this folder</string>
 	<string name="cancel">Cancel</string>
+	
+	<string name="tab_start">Start</string>
+	<string name="tab_level">Level</string>
 </resources>
