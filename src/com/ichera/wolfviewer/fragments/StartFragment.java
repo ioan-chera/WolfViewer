@@ -82,4 +82,10 @@ public class StartFragment extends SwitchableFragment
 	{
 		
 	}
+
+	@Override
+	public boolean handleBackButton() 
+	{
+		return false;
+	}
 }

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import com.ichera.wolfviewer.Global;
 
@@ -39,6 +40,10 @@ public class LevelContainer
 	
 	private short[][][] mLevels;
 	private String[] mLevelNames;
+	
+	private ArrayList<Stack<Runnable>> mUndoStacks;
+	private ArrayList<Stack<Runnable>> mRedoStacks;
+	private ArrayList<Stack<Runnable>> mCurrentStacks;
 	
 	private ArrayList<WeakReference<Observer>> mObservers;
 	
@@ -96,9 +101,9 @@ public class LevelContainer
 		   0x1d, 0x1d, 0x1d, 0x1d, 0xdd, 0xdd, 0x7d, 0xdd, 0xdd, 0xdd
 	};
 	
-	public static int[] getCeilingColours()
+	public static int getCeilingColour(int index)
 	{
-		return sCeilingColours;
+		return sCeilingColours[index];
 	}
 	
 	public short getTile(int level, int plane, int x, int y)
@@ -111,25 +116,49 @@ public class LevelContainer
 		return mLevels[level][plane][i];
 	}
 	
-	public void setTile(int level, int plane, int i, short value)
+	public void undo(int level)
 	{
+		if(!mUndoStacks.get(level).empty())
+		{
+			mCurrentStacks = mRedoStacks;
+			mUndoStacks.get(level).pop().run();
+			mCurrentStacks = mUndoStacks;
+		}
+	}
+	
+	public void redo(int level)
+	{
+		if(!mRedoStacks.get(level).empty())
+		{
+			mRedoStacks.get(level).pop().run();
+		}
+	}
+	
+	public boolean hasUndo(int level)
+	{
+		return !mUndoStacks.get(level).empty();
+	}
+	
+	private void pushUndo(int level, Runnable command)
+	{
+		if(mCurrentStacks == mUndoStacks)
+			mRedoStacks.get(level).clear();
+		mCurrentStacks.get(level).push(command);
+	}
+	
+	public void setTile(final int level, final int plane, final int i, short value)
+	{
+		final short current = mLevels[level][plane][i];
+		pushUndo(level, new Runnable() 
+		{
+			@Override
+			public void run() 
+			{
+				setTile(level, plane, i, current);
+			}
+		});
 		mLevels[level][plane][i] = value;
 		notifyObserversLocalChange(level, plane, i, value);
-	}
-	
-	public short[] getPlane(int level, int plane)
-	{
-		return mLevels[level][plane];
-	}
-	
-	public short[][] getLevel(int level)
-	{
-		return mLevels[level];
-	}
-	
-	public short[][][] getLevels()
-	{
-		return mLevels;
 	}
 	
 	public String getLevelName(int n)
@@ -190,6 +219,14 @@ public class LevelContainer
 			// All ok
 			mLevels = newLevels;
 			mLevelNames = newLevelNames;
+			mUndoStacks = new ArrayList<Stack<Runnable>>(mLevels.length);
+			mRedoStacks = new ArrayList<Stack<Runnable>>(mLevels.length);
+			for(int i = 0; i < mLevels.length; ++i)
+			{
+				mUndoStacks.add(new Stack<Runnable>());
+				mRedoStacks.add(new Stack<Runnable>());
+			}
+			mCurrentStacks = mUndoStacks;
 		}
 		catch(FileNotFoundException e)
 		{

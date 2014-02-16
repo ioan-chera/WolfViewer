@@ -22,7 +22,8 @@
         android:clickable="true">
         <ListView android:id="@+id/wall_list"
             android:layout_width="48dp"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            android:cacheColorHint="@android:color/transparent"/>
         
     </LinearLayout>
 

@@ -52,7 +52,7 @@ public class MainActivity extends ActionBarActivity
 	private Bundle mStartBundle;
 	private Bundle mLevelBundle;
 	
-	Fragment mCurrentFragment;
+	private SwitchableFragment mCurrentFragment;
 	
 	// saved
 	private File mCurrentPath;
@@ -160,6 +160,14 @@ public class MainActivity extends ActionBarActivity
 		super.onDestroy();
 		if(mTrack != null)
 			mTrack.release();
+	}
+	
+	@Override
+	public void onBackPressed()
+	{
+		if(mCurrentFragment.handleBackButton())
+			return;
+		super.onBackPressed();
 	}
 	
 	private void  establishCurrentFragment()

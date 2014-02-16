@@ -73,6 +73,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	
 	// Item click control
 	private boolean mPressDown;
+	private long mPressDownTimeMilli;
 		
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -239,7 +240,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
     		.setTitle(document.getLevels().getLevelName(mCurrentLevel));
     	
     	int ceilingColour = Palette.WL6[LevelContainer
-    	                                .getCeilingColours()[mCurrentLevel]];
+    	                                .getCeilingColour(mCurrentLevel)];
     	
     	mGridLayout.setBackgroundColor(ceilingColour);
     	
@@ -267,6 +268,11 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	{	
 		if(v == mVerticalScroll)
 		{
+			if(event.getActionMasked() == MotionEvent.ACTION_MOVE)
+			{
+				if(mPressDown && System.currentTimeMillis() - mPressDownTimeMilli > 80)
+					mPressDown = false;	// cancel any pressed thing
+			}
 			if(event.getActionMasked() == MotionEvent.ACTION_UP)
 			{
 				// More hackery: interception galore
@@ -303,6 +309,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 		else if(v instanceof ImageView)
 		{
 			mPressDown = true;	
+			mPressDownTimeMilli = System.currentTimeMillis();
 			return false;
 		}
 		return false;
@@ -318,7 +325,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	{
 		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
 		{
-			mPressDown = false;	// cancel any pressed thing
+			
 			
 			Document document = Document.getInstance();
 			if(document == null || !document.isLoaded())
@@ -348,10 +355,11 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	public void onOverScrolled(FrameLayout scrollView, int scrollX,
 			int scrollY, boolean clampedX, boolean clampedY) 
 	{
-		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
-		{
-			mPressDown = false;
-		}
+		// unreliable
+//		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
+//		{
+//			mPressDown = false;
+//		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -454,17 +462,17 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	private void updateGraphics(ImageView iv, int x, int y)
 	{
 		Document document = Document.getInstance();
-		short[][] level = document.getLevels().getLevel(mCurrentLevel);
+//		short[][] level = document.getLevels().getLevel(mCurrentLevel);
     	
-    	short[] wallplane = level[0];
-    	short[] actorplane = level[1];
+//    	short[] wallplane = level[0];
+//    	short[] actorplane = level[1];
 		
-    	int cell = wallplane[y * LevelContainer.MAPSIZE + x];
+    	int cell = document.getLevels().getTile(mCurrentLevel, 0, x, y);
     	
     	if(!setBitmapFromMapValue(document, iv, cell))
     	{
     		cell = Global.getActorSpriteMap().get(
-					actorplane[y * LevelContainer.MAPSIZE + x], -1);
+					document.getLevels().getTile(mCurrentLevel, 1, x, y), -1);
 			if(cell == -1)
 				iv.setImageBitmap(null);
 			else
@@ -650,6 +658,11 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 		int y = i / LevelContainer.MAPSIZE;
 		if(mTileViews[y][x] != null && level == mCurrentLevel)
 			updateGraphics(mTileViews[y][x], x, y);
+		else if(level == mCurrentLevel)
+		{
+			mHorizontalScroll.scrollTo(x * mTileSize - mViewportSize.x / 2, 0);
+			mVerticalScroll.scrollTo(0, y * mTileSize - mViewportSize.y / 2);
+		}
 	}
 
 	@Override
@@ -660,6 +673,19 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 			mCurrentWallChoice = arg2;
 			((WallListAdapter)mWallList.getAdapter()).notifyDataSetChanged();
 		}
+	}
+
+	@Override
+	public boolean handleBackButton() 
+	{
+		if(Document.getInstance().isLoaded() && 
+				Global.inBounds(mCurrentLevel, 0, LevelContainer.NUMMAPS - 1)
+				&& Document.getInstance().getLevels().hasUndo(mCurrentLevel))
+		{
+			Document.getInstance().getLevels().undo(mCurrentLevel);
+			return true;
+		}
+		return false;
 	}
 
 	

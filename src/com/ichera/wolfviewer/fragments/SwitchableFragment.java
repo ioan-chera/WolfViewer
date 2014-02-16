@@ -31,6 +31,7 @@ public abstract class SwitchableFragment extends Fragment
 	}
 	
 	protected abstract void saveState(Bundle target);
+	public abstract boolean handleBackButton();
 	
 	public void saveSwitchState()
 	{
