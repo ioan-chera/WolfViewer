@@ -532,7 +532,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 				item.setBackgroundResource(R.drawable.frame_selection);
 			else
 				item.setBackgroundResource(0);
-			if(!setBitmapFromMapValue(mDocument, item, index))
+			if(!mDocument.isLoaded() || !setBitmapFromMapValue(mDocument, item, index))
 				item.setImageDrawable(null);
 			
 			return item;
