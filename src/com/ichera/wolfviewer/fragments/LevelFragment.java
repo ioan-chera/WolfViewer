@@ -1,5 +1,12 @@
 package com.ichera.wolfviewer.fragments;
 
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -14,11 +21,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
+import android.widget.AbsListView;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 
 import com.ichera.wolfviewer.Global;
+import com.ichera.wolfviewer.MainActivity;
 import com.ichera.wolfviewer.Palette;
 import com.ichera.wolfviewer.R;
 import com.ichera.wolfviewer.document.Document;
@@ -29,25 +42,34 @@ import com.ichera.wolfviewer.ui.VXScrollView;
 import com.ichera.wolfviewer.ui.VisibilityGrid;
 
 public class LevelFragment extends SwitchableFragment implements View.OnTouchListener,
-ScrollViewListener, VisibilityGrid.Delegate
+ScrollViewListener, VisibilityGrid.Delegate, View.OnClickListener, 
+LevelContainer.Observer, AdapterView.OnItemClickListener
 {
 	static final String TAG = "LevelFragment";
 	
 	private static final String EXTRA_CURRENT_LEVEL = "currentLevel";
 	private static final String EXTRA_SCROLL_X = "scrollX";
 	private static final String EXTRA_SCROLL_Y = "scrollY";
+	private static final String EXTRA_CURRENT_WALL_CHOICE = "currentWallChoice";
 	private int mCurrentLevel;
+	private int mCurrentWallChoice;
 	
 	// widgets
 	private RelativeLayout mGridLayout;
 	private VXScrollView mVerticalScroll;
 	private HXScrollView mHorizontalScroll;
+	private ListView mWallList;
+	private LinearLayout mLeftDrawer;
 	
 	// display
 	private int mTileSize;
 	private ImageView[][] mTileViews;
 	private Point mViewportSize;
 	private VisibilityGrid mVisGrid;
+	
+	// other data
+	private JSONArray mWallChoices;
+	private boolean mDeferAddObserver;
 		
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -61,6 +83,8 @@ ScrollViewListener, VisibilityGrid.Delegate
 		
 		mTileSize = (int)(48 * Global.getScale());
 		setHasOptionsMenu(true);
+		
+		readWallChoices();
 	}
 	
 	@Override
@@ -97,12 +121,18 @@ ScrollViewListener, VisibilityGrid.Delegate
         mGridLayout = (RelativeLayout)v.findViewById(R.id.grid_layout);
         mVerticalScroll = (VXScrollView)v.findViewById(R.id.vertical_scroll);
         mHorizontalScroll = (HXScrollView)v.findViewById(R.id.horizontal_scroll);
+        mWallList = (ListView)v.findViewById(R.id.wall_list);
+        mLeftDrawer = (LinearLayout)v.findViewById(R.id.left_drawer);
         
         mHorizontalScroll.setScrollingEnabled(false);
         mVerticalScroll.setOnTouchListener(this);
         mHorizontalScroll.setScrollViewListener(this);
         mVerticalScroll.setScrollViewListener(this);
-
+        
+        mLeftDrawer.setBackgroundColor(MainActivity.FLOOR_COLOUR);
+        mWallList.setAdapter(new WallListAdapter());
+        mWallList.setOnItemClickListener(this);
+        
         mGridLayout.getLayoutParams().width = 
     			mGridLayout.getLayoutParams().height = LevelContainer.MAPSIZE *
     			mTileSize;
@@ -125,8 +155,9 @@ ScrollViewListener, VisibilityGrid.Delegate
             	{
             		mHorizontalScroll.scrollTo(b.getInt(EXTRA_SCROLL_X), 0);
                 	mVerticalScroll.scrollTo(0, b.getInt(EXTRA_SCROLL_Y));
+                	mCurrentWallChoice = b.getInt(EXTRA_CURRENT_WALL_CHOICE);
             	}
-            	updateGridLayout();
+            	updateData();
             }
         });
 		
@@ -139,6 +170,31 @@ ScrollViewListener, VisibilityGrid.Delegate
 		target.putInt(EXTRA_CURRENT_LEVEL, mCurrentLevel);
 		target.putInt(EXTRA_SCROLL_X, mHorizontalScroll.getScrollX());
 		target.putInt(EXTRA_SCROLL_Y, mVerticalScroll.getScrollY());
+		target.putInt(EXTRA_CURRENT_WALL_CHOICE, mCurrentWallChoice);
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		if(Document.getInstance().isLoaded())
+		{
+			Log.i(TAG, "Adding observer");
+			Document.getInstance().getLevels().addObserver(this);
+		}
+		else
+			mDeferAddObserver = true;
+	}
+	
+	@Override
+	public void onPause()
+	{
+		super.onPause();
+		if(Document.getInstance().isLoaded())
+		{
+			Log.i(TAG, "Removing observer");
+			Document.getInstance().getLevels().removeObserver(this);
+		}
 	}
 		
 	@Override
@@ -148,18 +204,26 @@ ScrollViewListener, VisibilityGrid.Delegate
 		mGridLayout.removeAllViews();
 	}
 	
-	public void updateGridLayout()
+	public void updateData()
     {
 		if(mGridLayout == null)
+			return;	// will be done anyway upon creation
+		if(Document.getInstance().isLoaded() && mDeferAddObserver)
 		{
-//			mDeferUpdateGridLayout = true;
-			// It would be done anyway upon fragment creation
-			return;
+			Log.i(TAG, "Adding deferred observer");
+			mDeferAddObserver = false;
+			Document.getInstance().getLevels().addObserver(this);
 		}
+		updateGridLayout();
+    	((WallListAdapter)mWallList.getAdapter()).notifyDataSetChanged();
+    }
+	
+	private void updateGridLayout()
+	{
 		Document document = Document.getInstance();
-    	if(!document.isLoaded())
+		if(!document.isLoaded())
     		return;
-    	
+		
     	if(mCurrentLevel < 0)
     		mCurrentLevel = 0;
     	else if(mCurrentLevel >= LevelContainer.NUMMAPS)
@@ -187,8 +251,7 @@ ScrollViewListener, VisibilityGrid.Delegate
     	mVisGrid.create(new Point(LevelContainer.MAPSIZE * mTileSize, 
     			LevelContainer.MAPSIZE * mTileSize), viewportRect, mTileSize, 
     			this);
-    	
-    }
+	}
 
 	////////////////////////////////////////////////////////////////////////////
 	// View.OnTouchListener
@@ -200,9 +263,33 @@ ScrollViewListener, VisibilityGrid.Delegate
 		if(v == mVerticalScroll)
 		{
 			// LOL trickery
-			mHorizontalScroll.setScrollingEnabled(true);
+//			if(event.getActionMasked() == MotionEvent.ACTION_DOWN)
+				mHorizontalScroll.setScrollingEnabled(true);
 			mHorizontalScroll.dispatchTouchEvent(event);
-			mHorizontalScroll.setScrollingEnabled(false);
+//			if(event.getActionMasked() == MotionEvent.ACTION_UP)
+				mHorizontalScroll.setScrollingEnabled(false);
+			return false;
+		}
+		else if(v instanceof ImageView)
+		{
+			Log.i(TAG, "Touch view");
+			if(event.getActionMasked() == MotionEvent.ACTION_DOWN)
+			{
+				Log.i(TAG, "Touch view detect");
+				onClick(v);
+			}
+//			if(event.getAction() == MotionEvent.ACTION_DOWN)
+//			v.setOnTouchListener(null);
+//			v.setOnClickListener(null);
+//			mHorizontalScroll.setScrollingEnabled(true);
+//			mHorizontalScroll.setScrollingEnabled(true);
+//			mHorizontalScroll.dispatchTouchEvent(event);
+//			mHorizontalScroll.setScrollingEnabled(false);
+//			v.setOnClickListener(this);
+//			v.setOnTouchListener(this);
+//			else if(event.getAction() == MotionEvent.ACTION_DOWN)
+//			mHorizontalScroll.setScrollingEnabled(false);
+//			mHorizontalScroll.requestDisallowInterceptTouchEvent(false);
 			return false;
 		}
 		return false;
@@ -269,11 +356,15 @@ ScrollViewListener, VisibilityGrid.Delegate
 		if(getActivity() == null)
 			return;
 		mTileViews[i][j] = new ImageView(getActivity());
+		mTileViews[i][j].setId(i * LevelContainer.MAPSIZE + j);
 		RelativeLayout.LayoutParams rllp = new RelativeLayout.LayoutParams(
 				mTileSize, mTileSize);
 		rllp.leftMargin = j * mTileSize;
 		rllp.topMargin = i * mTileSize;
 		mTileViews[i][j].setLayoutParams(rllp);
+		mTileViews[i][j].setOnClickListener(this);
+//		mTileViews[i][j].setOnTouchListener(this);
+//		mTileViews[i][j].setClickable(true);
 		mGridLayout.addView(mTileViews[i][j]);
 		
 		updateGraphics(mTileViews[i][j], j, i);
@@ -313,6 +404,7 @@ ScrollViewListener, VisibilityGrid.Delegate
 				rllp.topMargin = i2 * mTileSize;
 				mTileViews[i1][j1] = null;
 				mTileViews[i2][j2] = iv;
+				mTileViews[i2][j2].setId(i2 * LevelContainer.MAPSIZE + j2);
 				
 //				mGridLayout.invalidate(new Rect(rllp.leftMargin, rllp.topMargin, 
 //						rllp.leftMargin + mTileSize, rllp.topMargin + mTileSize));
@@ -342,32 +434,200 @@ ScrollViewListener, VisibilityGrid.Delegate
     	short[] wallplane = level[0];
     	short[] actorplane = level[1];
 		
-    	int texture;
-		int cell = wallplane[y * LevelContainer.MAPSIZE + x];
+    	int cell = wallplane[y * LevelContainer.MAPSIZE + x];
+    	
+    	if(!setBitmapFromMapValue(document, iv, cell))
+    	{
+    		cell = Global.getActorSpriteMap().get(
+					actorplane[y * LevelContainer.MAPSIZE + x], -1);
+			if(cell == -1)
+				iv.setImageBitmap(null);
+			else
+				iv.setImageBitmap(document.getVSwap().getSpriteBitmap(cell));
+    	}
+	}
+	
+	private boolean setBitmapFromMapValue(Document document, ImageView iv, int cell)
+	{
 		if(cell >= 90 && cell <= 100 && cell % 2 == 0)
 		{
 			iv.setImageResource(R.drawable.door_vertical);
+			return true;
 		}
 		else if(cell >= 91 && cell <= 101 && cell % 2 == 1)
 		{
 			iv.setImageResource(R.drawable.door_horizontal);
+			return true;
 		}
 		else
 		{
-			texture = 2 * (cell - 1);
+			int texture = 2 * (cell - 1);
 			if(texture >= 0 && texture < document.getVSwap().getSpriteStart())
 			{
 				iv.setImageBitmap(document.getVSwap().getWallBitmap(texture));
+				return true;
 			}
+		}
+		return false;
+	}
+	
+	////////////////////////////////////////////////////////////////////////////
+	// Wall list adapter
+	////////////////////////////////////////////////////////////////////////////
+	
+	private class WallListAdapter extends BaseAdapter
+	{
+		private Document mDocument;
+		
+		WallListAdapter()
+		{
+			mDocument = Document.getInstance();
+		}
+		
+		@Override
+		public int getCount() 
+		{
+			return mWallChoices != null ? mWallChoices.length() : 0;
+		}
+
+		@Override
+		public Object getItem(int position) 
+		{
+			return mWallChoices != null ? mWallChoices.optJSONObject(position) 
+					: null;
+		}
+
+		@Override
+		public long getItemId(int position) 
+		{
+			if(mWallChoices == null)
+				return -1;
 			else
 			{
-				cell = Global.getActorSpriteMap().get(
-						actorplane[y * LevelContainer.MAPSIZE + x], -1);
-				if(cell == -1)
-					iv.setImageBitmap(null);
+				JSONObject object = (JSONObject)getItem(position);
+				if(object != null)
+					return object.optLong("id");
 				else
-					iv.setImageBitmap(document.getVSwap().getSpriteBitmap(cell));
+					return -1;
 			}
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) 
+		{
+			ImageView item;
+			if(convertView == null)
+			{
+				item = new ImageView(getActivity());
+				AbsListView.LayoutParams alvlp = new AbsListView.LayoutParams(
+						(int)(48 * Global.getScale()), 
+						(int)(48 * Global.getScale()));
+				item.setLayoutParams(alvlp);
+				item.setPadding(0, (int)(5 * Global.getScale()), 0, (int)(5 * Global.getScale()));
+			}
+			else
+				item = (ImageView)convertView;
+			int index = (int)getItemId(position);
+			if(mCurrentWallChoice == position)
+				item.setBackgroundResource(R.drawable.frame_selection);
+			else
+				item.setBackgroundResource(0);
+			if(!setBitmapFromMapValue(mDocument, item, index))
+				item.setImageDrawable(null);
+			
+			return item;
+		}
+		
+	}
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	void readWallChoices()
+	{
+		// Called upon creation
+		InputStream is = null;
+		StringBuilder sb;
+		try
+		{
+			sb = new StringBuilder(5000);
+			is = getActivity().getAssets().open("wall_choices.json");
+			
+			byte[] buffer = new byte[512];
+			while(is.read(buffer) > 0)
+				sb.append(new String(buffer, "UTF-8"));
+			
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+			return;
+		}
+		finally
+		{
+			if(is != null)
+			{
+				try
+				{
+					is.close();
+				}
+				catch(IOException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		String jsonString = sb.toString();
+		JSONArray array = null;
+		try
+		{
+			array = new JSONArray(jsonString);
+		}
+		catch(JSONException e)
+		{
+			e.printStackTrace();
+			Global.showErrorAlert(getActivity(), "Internal error", 
+					"Failed to read the wall choice list!");
+			return;
+		}
+		if(array != null)
+		{
+			mWallChoices = array;
+			Global.boundValue(mCurrentWallChoice, 0, mWallChoices.length() - 1);
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void onClick(View v) 
+	{
+		if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
+				mWallChoices.length() - 1))
+			return;
+		JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
+		if(obj == null)
+			return;
+		Document.getInstance().getLevels().setTile(mCurrentLevel, 0, v.getId(), 
+				(short)obj.optInt("id"));
+		
+	}
+
+	@Override
+	public void observeLocalChange(int level, int plane, int i, short value)
+	{
+		int x = i % LevelContainer.MAPSIZE;
+		int y = i / LevelContainer.MAPSIZE;
+		if(mTileViews[y][x] != null && level == mCurrentLevel)
+			updateGraphics(mTileViews[y][x], x, y);
+	}
+
+	@Override
+	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) 
+	{
+		if(arg0 == mWallList)
+		{
+			mCurrentWallChoice = arg2;
+			((WallListAdapter)mWallList.getAdapter()).notifyDataSetChanged();
 		}
 	}
 }

@@ -67,7 +67,7 @@ public class MainActivity extends ActionBarActivity
 	private AudioTrack mTrack;
 	
 	// static
-	private static final int sFloorColour = Palette.WL6[25];
+	public static final int FLOOR_COLOUR = Palette.WL6[25];
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) 
@@ -76,7 +76,7 @@ public class MainActivity extends ActionBarActivity
         Global.initialize(this);
         mDocument = Document.getInstance();
         setContentView(R.layout.activity_main);
-        findViewById(android.R.id.content).setBackgroundColor(sFloorColour);
+        findViewById(android.R.id.content).setBackgroundColor(FLOOR_COLOUR);
         
         if(savedInstanceState != null)
         {
@@ -254,7 +254,8 @@ public class MainActivity extends ActionBarActivity
 			
 			if(result)
 			{
-				((LevelFragment)showFragment(LevelFragment.class, mLevelBundle)).updateGridLayout();
+				((LevelFragment)showFragment(LevelFragment.class, mLevelBundle))
+				.updateData();
 			}
 			else
 				Global.showErrorAlert(MainActivity.this, 

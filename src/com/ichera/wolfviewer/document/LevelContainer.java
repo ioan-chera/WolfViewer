@@ -25,6 +25,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 
 import com.ichera.wolfviewer.Global;
 
@@ -37,6 +39,52 @@ public class LevelContainer
 	
 	private short[][][] mLevels;
 	private String[] mLevelNames;
+	
+	private ArrayList<WeakReference<Observer>> mObservers;
+	
+	public interface Observer
+	{
+		void observeLocalChange(int level, int plane, int i, short value);
+	}
+	
+	private void notifyObserversLocalChange(int level, int plane, int i, short value)
+	{
+		if(mObservers == null)
+			return;
+		for(WeakReference<LevelContainer.Observer> wr : mObservers)
+		{
+			if(wr.get() != null)
+			{
+				wr.get().observeLocalChange(level, plane, i, value);
+			}
+		}
+	}
+	
+	public void addObserver(Observer who)
+	{
+		if(mObservers == null)
+			mObservers = new ArrayList<WeakReference<Observer>>();
+		mObservers.add(new WeakReference<LevelContainer.Observer>(who));
+	}
+	
+	public void removeObserver(Observer who)
+	{
+		if(mObservers == null)
+			return;
+		int i = 0;
+		WeakReference<LevelContainer.Observer> wr;
+		while(i < mObservers.size())
+		{
+			wr = mObservers.get(i);
+			if(wr.get() == null || wr.get() == who)
+			{
+				mObservers.remove(wr);
+				i = 0;
+				continue;
+			}
+			++i;
+		}
+	}
 	
 	private static final int[] sCeilingColours = new int[]{
 		   0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0xbf,
@@ -61,6 +109,12 @@ public class LevelContainer
 	public short getTile(int level, int plane, int i)
 	{
 		return mLevels[level][plane][i];
+	}
+	
+	public void setTile(int level, int plane, int i, short value)
+	{
+		mLevels[level][plane][i] = value;
+		notifyObserversLocalChange(level, plane, i, value);
 	}
 	
 	public short[] getPlane(int level, int plane)
@@ -222,4 +276,5 @@ public class LevelContainer
 		int planeStart[] = new int[3];
 		int planeLength[] = new int[3];
 	}
+	
 }

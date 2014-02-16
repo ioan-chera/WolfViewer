@@ -1,0 +1,263 @@
+[
+    {
+        "id":0,
+        "name":"Nothing"
+    },
+    {
+        "id":1,
+        "name":"Grey brick 1"
+    },
+    {
+        "id":2,
+        "name":"Grey brick 2"
+    },
+    {
+        "id":27,
+        "name":"Grey brick 3"
+    },
+    {
+        "id":3,
+        "name":"Grey brick / flag"
+    },
+    {
+        "id":4,
+        "name":"Grey brick / Hitler"
+    },
+    {
+        "id":6,
+        "name":"Grey brick / eagle"
+    },
+    {
+        "id":28,
+        "name":"Grey brick / sign"
+    },
+    
+    {
+        "id":24,
+        "name":"Dirty brick 1"
+    },
+    {
+        "id":26,
+        "name":"Dirty brick 2"
+    },
+    
+    {
+        "id":5,
+        "name":"Cell"
+    },
+    {
+        "id":7,
+        "name":"Cell / skeleton"
+    },
+    {
+        "id":8,
+        "name":"Blue brick 1"
+    },
+    {
+        "id":9,
+        "name":"Blue brick 2"
+    },
+    {
+        "id":41,
+        "name":"Blue brick / sign"
+    },
+    
+    {
+        "id":12,
+        "name":"Wood"
+    },
+    {
+        "id":10,
+        "name":"Wood / eagle"
+    },
+    {
+        "id":11,
+        "name":"Wood / Hitler"
+    },
+    {
+        "id":23,
+        "name":"Wood / iron cross"
+    },
+    
+    {
+        "id":13,
+        "name":"Entrance to level"
+    },
+    
+    {
+        "id":15,
+        "name":"Steel"
+    },
+    {
+        "id":14,
+        "name":"Steel / sign"
+    },
+    {
+        "id":16,
+        "name":"Landscape"
+    },
+    
+    {
+        "id":17,
+        "name":"Red brick"
+    },
+    {
+        "id":18,
+        "name":"Red brick / swastika"
+    },
+    {
+        "id":20,
+        "name":"Red brick / flag"
+    },
+    {
+        "id":38,
+        "name":"Multicolor brick"
+    },
+    
+    {
+        "id":19,
+        "name":"Purple"
+    },
+    {
+        "id":25,
+        "name":"Purple / blood"
+    },
+    
+    {
+        "id":29,
+        "name":"Brown weave"
+    },
+    {
+        "id":32,
+        "name":"Brown weave / blood 1"
+    },
+    {
+        "id":30,
+        "name":"Brown weave / blood 2"
+    },
+    {
+        "id":31,
+        "name":"Brown weave / blood 3"
+    },
+    {
+        "id":33,
+        "name":"Stained glass"
+    },
+    {
+        "id":35,
+        "name":"Grey wall 1"
+    },
+    {
+        "id":39,
+        "name":"Grey wall 2"
+    },
+    {
+        "id":43,
+        "name":"Grey wall / map"
+    },
+    {
+        "id":37,
+        "name":"Grey wall / vent"
+    },
+    {
+        "id":40,
+        "name":"Blue wall"
+    },
+    {
+        "id":36,
+        "name":"Blue wall / swastika"
+    },
+    {
+        "id":34,
+        "name":"Blue wall / skull"
+    },
+    {
+        "id":44,
+        "name":"Brown stone 1"
+    },
+    {
+        "id":45,
+        "name":"Brown stone 2"
+    },
+    {
+        "id":42,
+        "name":"Brown marble 1"
+    },
+    {
+        "id":46,
+        "name":"Brown marble 2"
+    },
+    {
+        "id":47,
+        "name":"Brown marble / flag"
+    },
+    {
+        "id":48,
+        "name":"Wood panel"
+    },
+    {
+        "id":50,
+        "name":"Fake door"
+    },
+    {
+        "id":51,
+        "name":"Door excavation (side of door)"
+    },
+    {
+        "id":53,
+        "name":"Fake locked door"
+    },
+    {
+        "id":85,
+        "name":"Elevator wall"
+    },
+    {
+        "id":21,
+        "name":"Elevator"
+    },
+    {
+        "id":22,
+        "name":"Fake elevator"
+    },
+    {
+        "id":90,
+        "name":"Door vertical"
+    },
+    {
+        "id":91,
+        "name":"Door horizontal"
+    },
+    {
+        "id":92,
+        "name":"Door vertical (gold key)"
+    },
+    {
+        "id":93,
+        "name":"Door horizontal (gold key)"
+    },
+    {
+        "id":94,
+        "name":"Door vertical (silver key)"
+    },
+    {
+        "id":95,
+        "name":"Door horizontal (silver key)"
+    },
+    {
+        "id":100,
+        "name":"Elevator door (normal)"
+    },
+    {
+        "id":101,
+        "name":"Elevator door (horizontal)"
+    },
+    {
+        "id":106,
+        "name":"Floor (deaf guard)"
+    },
+    {
+        "id":107,
+        "name":"Elevator to secret floor"
+    }
+    
+]
