@@ -23,4 +23,6 @@ import android.widget.FrameLayout;
 public interface ScrollViewListener 
 {
 	void onScrollChanged(FrameLayout scrollView, int x, int y, int oldx, int oldy);
+	void onOverScrolled(FrameLayout scrollView, int scrollX, int scrollY, 
+			boolean clampedX, boolean clampedY);
 }

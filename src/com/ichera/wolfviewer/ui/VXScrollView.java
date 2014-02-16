@@ -50,4 +50,14 @@ public class VXScrollView extends ScrollView
             scrollViewListener.onScrollChanged(this, x, y, oldx, oldy);
         }
     }
+    
+    @Override
+    protected void onOverScrolled (int scrollX, int scrollY, boolean clampedX, boolean clampedY)
+    {
+    	super.onOverScrolled(scrollX, scrollY, clampedX, clampedY);
+    	if(scrollViewListener != null)
+    	{
+    		scrollViewListener.onOverScrolled(this, scrollX, scrollY, clampedX, clampedY);
+    	}
+    }
 }

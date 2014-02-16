@@ -70,6 +70,9 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	// other data
 	private JSONArray mWallChoices;
 	private boolean mDeferAddObserver;
+	
+	// Item click control
+	private boolean mPressDown;
 		
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -126,6 +129,8 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
         
         mHorizontalScroll.setScrollingEnabled(false);
         mVerticalScroll.setOnTouchListener(this);
+//        mVerticalScroll.setClickable(true);
+//        mHorizontalScroll.setOnClickListener(this);
         mHorizontalScroll.setScrollViewListener(this);
         mVerticalScroll.setScrollViewListener(this);
         
@@ -262,34 +267,42 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	{	
 		if(v == mVerticalScroll)
 		{
+			if(event.getActionMasked() == MotionEvent.ACTION_UP)
+			{
+				// More hackery: interception galore
+				if(mPressDown)	// not cancelled by scrolling.
+				{
+					// Get the view from the visible spot
+					mPressDown = false;
+					if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
+							mWallChoices.length() - 1) || !Document.getInstance().isLoaded())
+						return false;
+					JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
+					if(obj == null)
+						return false;
+					int x = (int)((event.getX() + mHorizontalScroll.getScrollX()) 
+							/ mTileSize);
+					int y = (int)((event.getY() + mVerticalScroll.getScrollY())
+							/ mTileSize);
+					if(Global.inBounds(x, 0, LevelContainer.MAPSIZE - 1) &&
+							Global.inBounds(y, 0, LevelContainer.MAPSIZE - 1))
+					{
+						Document.getInstance().getLevels().setTile(mCurrentLevel, 0, 
+								LevelContainer.MAPSIZE * y + x, (short)obj.optInt("id"));
+						return true;
+					}
+				}
+			}
+			
 			// LOL trickery
-//			if(event.getActionMasked() == MotionEvent.ACTION_DOWN)
-				mHorizontalScroll.setScrollingEnabled(true);
+			mHorizontalScroll.setScrollingEnabled(true);
 			mHorizontalScroll.dispatchTouchEvent(event);
-//			if(event.getActionMasked() == MotionEvent.ACTION_UP)
-				mHorizontalScroll.setScrollingEnabled(false);
+			mHorizontalScroll.setScrollingEnabled(false);
 			return false;
 		}
 		else if(v instanceof ImageView)
 		{
-			Log.i(TAG, "Touch view");
-			if(event.getActionMasked() == MotionEvent.ACTION_DOWN)
-			{
-				Log.i(TAG, "Touch view detect");
-				onClick(v);
-			}
-//			if(event.getAction() == MotionEvent.ACTION_DOWN)
-//			v.setOnTouchListener(null);
-//			v.setOnClickListener(null);
-//			mHorizontalScroll.setScrollingEnabled(true);
-//			mHorizontalScroll.setScrollingEnabled(true);
-//			mHorizontalScroll.dispatchTouchEvent(event);
-//			mHorizontalScroll.setScrollingEnabled(false);
-//			v.setOnClickListener(this);
-//			v.setOnTouchListener(this);
-//			else if(event.getAction() == MotionEvent.ACTION_DOWN)
-//			mHorizontalScroll.setScrollingEnabled(false);
-//			mHorizontalScroll.requestDisallowInterceptTouchEvent(false);
+			mPressDown = true;	
 			return false;
 		}
 		return false;
@@ -305,6 +318,8 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	{
 		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
 		{
+			mPressDown = false;	// cancel any pressed thing
+			
 			Document document = Document.getInstance();
 			if(document == null || !document.isLoaded())
 				return;
@@ -327,6 +342,16 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 				mVisGrid.rowUpdate(oldy, y);
 		}
 		
+	}
+	
+	@Override
+	public void onOverScrolled(FrameLayout scrollView, int scrollX,
+			int scrollY, boolean clampedX, boolean clampedY) 
+	{
+		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
+		{
+			mPressDown = false;
+		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -362,8 +387,8 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 		rllp.leftMargin = j * mTileSize;
 		rllp.topMargin = i * mTileSize;
 		mTileViews[i][j].setLayoutParams(rllp);
-		mTileViews[i][j].setOnClickListener(this);
-//		mTileViews[i][j].setOnTouchListener(this);
+//		mTileViews[i][j].setOnClickListener(this);
+		mTileViews[i][j].setOnTouchListener(this);
 //		mTileViews[i][j].setClickable(true);
 		mGridLayout.addView(mTileViews[i][j]);
 		
@@ -601,15 +626,21 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	@Override
 	public void onClick(View v) 
 	{
-		if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
-				mWallChoices.length() - 1))
-			return;
-		JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
-		if(obj == null)
-			return;
-		Document.getInstance().getLevels().setTile(mCurrentLevel, 0, v.getId(), 
-				(short)obj.optInt("id"));
 		
+		if(v instanceof ImageView)
+		{
+			if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
+					mWallChoices.length() - 1))
+				return;
+			JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
+			if(obj == null)
+				return;
+//			Log.i(TAG, "Clicked " + v.getId() % 64 + " " + v.getId() / 64 + " real " + 
+//				((RelativeLayout.LayoutParams)v.getLayoutParams()).leftMargin / v.getWidth() + " " + 
+//				((RelativeLayout.LayoutParams)v.getLayoutParams()).topMargin / v.getHeight());
+			Document.getInstance().getLevels().setTile(mCurrentLevel, 0, v.getId(), 
+					(short)obj.optInt("id"));
+		}
 	}
 
 	@Override
@@ -630,4 +661,6 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 			((WallListAdapter)mWallList.getAdapter()).notifyDataSetChanged();
 		}
 	}
+
+	
 }
