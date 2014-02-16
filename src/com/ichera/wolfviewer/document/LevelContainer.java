@@ -149,6 +149,8 @@ public class LevelContainer
 	public void setTile(final int level, final int plane, final int i, short value)
 	{
 		final short current = mLevels[level][plane][i];
+		if(current == value)
+			return;
 		pushUndo(level, new Runnable() 
 		{
 			@Override

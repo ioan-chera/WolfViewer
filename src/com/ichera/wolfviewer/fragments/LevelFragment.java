@@ -325,7 +325,8 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	{
 		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
 		{
-			
+			if(mPressDown && System.currentTimeMillis() - mPressDownTimeMilli > 80)
+				mPressDown = false;	// cancel any pressed thing
 			
 			Document document = Document.getInstance();
 			if(document == null || !document.isLoaded())
