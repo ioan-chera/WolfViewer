@@ -79,6 +79,11 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	// Item click control
 	private boolean mPressDown;
 	private long mPressDownTimeMilli;
+	
+	// Scroll assist
+	private float mx, my;
+	private ImageView mClickedTile;
+	private float mClickedX, mClickedY;
 		
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -135,16 +140,16 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
         mScrollLockCheck = (CheckBox)v.findViewById(R.id.scroll_lock_check);
         mCentralContent = (RelativeLayout)v.findViewById(R.id.central_content);
         
-        mHorizontalScroll.setScrollingEnabled(false);
-        mHorizontalScroll.setOnTouchListener(this);
-        mVerticalScroll.setOnTouchListener(this);
+//        mHorizontalScroll.setScrollingEnabled(false);
+//        mHorizontalScroll.setOnTouchListener(this);
+//        mVerticalScroll.setOnTouchListener(this);
         mCentralContent.setOnTouchListener(this);
 //        mVerticalScroll.setClickable(true);
 //        mHorizontalScroll.setOnClickListener(this);
         mHorizontalScroll.setScrollViewListener(this);
         mVerticalScroll.setScrollViewListener(this);
         mScrollLockCheck.setOnClickListener(this);
-        
+      
         int tColor = MainActivity.FLOOR_COLOUR;
         tColor = Color.argb(200, Color.red(tColor), Color.green(tColor), 
         		Color.blue(tColor)); 
@@ -285,62 +290,41 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	@Override
 	public boolean onTouch(View v, MotionEvent event) 
 	{	
-		Log.i(TAG, "Event action " + event.getActionMasked() + " on index " + event.getActionIndex() + " by " + v);
-		
-		if((mVerticalScroll.isScrollable() && v == mVerticalScroll || 
-				!mVerticalScroll.isScrollable() && (v instanceof ImageView))
-				&& event.getActionMasked() == MotionEvent.ACTION_UP)
-		{
-			// More hackery: interception galore
-			if(mPressDown)	// not cancelled by scrolling.
-			{
-				// Get the view from the visible spot
-				mPressDown = false;
-				if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
-						mWallChoices.length() - 1) || !Document.getInstance().isLoaded())
-					return false;
-				JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
-				if(obj == null)
-					return false;
-				int x = (int)((event.getX() + mHorizontalScroll.getScrollX()) 
-						/ mTileSize);
-				int y = (int)((event.getY() + mVerticalScroll.getScrollY())
-						/ mTileSize);
-				if(Global.inBounds(x, 0, LevelContainer.MAPSIZE - 1) &&
-						Global.inBounds(y, 0, LevelContainer.MAPSIZE - 1))
-				{
-					Document.getInstance().getLevels().setTile(mCurrentLevel, 0, 
-							LevelContainer.MAPSIZE * y + x, (short)obj.optInt("id"));
-					return true;
-				}
-			}
-		}
-		
-		if(v == mVerticalScroll)
-		{
-			if(event.getActionMasked() == MotionEvent.ACTION_MOVE)
-			{
-				if(mPressDown && System.currentTimeMillis() - mPressDownTimeMilli > 80)
-					mPressDown = false;	// cancel any pressed thing
-			}
-			
-			
-			// LOL trickery
-			if(mVerticalScroll.isScrollable())
-			{
-				mHorizontalScroll.setScrollingEnabled(true);
-				mHorizontalScroll.dispatchTouchEvent(event);
-				mHorizontalScroll.setScrollingEnabled(false);
-			}
-			return false;
-		}
-		else if(v instanceof ImageView)
-		{
-			mPressDown = true;	
-			mPressDownTimeMilli = System.currentTimeMillis();
-			return false;
-		}
-		return false;
+        float curX, curY;
+        
+        Log.i("onTouch", "" + v);
+
+        switch (event.getAction()) {
+
+            case MotionEvent.ACTION_DOWN:
+                mx = event.getX();
+                my = event.getY();
+                mClickedX = mx;
+                mClickedY = my;
+                if(v instanceof ImageView)
+                	mClickedTile = (ImageView)v;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                curX = event.getX();
+                curY = event.getY();
+                mVerticalScroll.scrollBy((int) (mx - curX), (int) (my - curY));
+                mHorizontalScroll.scrollBy((int) (mx - curX), (int) (my - curY));
+                mx = curX;
+                my = curY;
+                break;
+            case MotionEvent.ACTION_UP:
+                curX = event.getX();
+                curY = event.getY();
+                mVerticalScroll.scrollBy((int) (mx - curX), (int) (my - curY));
+                mHorizontalScroll.scrollBy((int) (mx - curX), (int) (my - curY));
+                if(Math.abs(mClickedX - curX) <= 1 && Math.abs(mClickedY - curY) <= 1 
+                		&& mClickedTile != null)
+                	onClick(mClickedTile);
+                break;
+        }
+        if(v == mCentralContent)
+        	return true;
+        return false;
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -665,7 +649,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	{
 		if(v == mScrollLockCheck)
 		{
-			mVerticalScroll.setScrollingEnabled(!mScrollLockCheck.isChecked());
+//			mVerticalScroll.setScrollingEnabled(!mScrollLockCheck.isChecked());
 //			mHorizontalScroll.setScrollingEnabled(mScrollLockCheck.isChecked());
 		}
 		else if(v instanceof ImageView)
