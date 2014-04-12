@@ -7,6 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -24,6 +25,7 @@ import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -50,6 +52,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	private static final String EXTRA_CURRENT_LEVEL = "currentLevel";
 	private static final String EXTRA_SCROLL_X = "scrollX";
 	private static final String EXTRA_SCROLL_Y = "scrollY";
+	private static final String EXTRA_SCROLL_LOCK = "scrollLock";
 	private static final String EXTRA_CURRENT_WALL_CHOICE = "currentWallChoice";
 	private int mCurrentLevel;
 	private int mCurrentWallChoice;
@@ -60,6 +63,8 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	private HXScrollView mHorizontalScroll;
 	private ListView mWallList;
 	private LinearLayout mLeftDrawer;
+	private CheckBox mScrollLockCheck;
+	private RelativeLayout mCentralContent;
 	
 	// display
 	private int mTileSize;
@@ -127,13 +132,23 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
         mHorizontalScroll = (HXScrollView)v.findViewById(R.id.horizontal_scroll);
         mWallList = (ListView)v.findViewById(R.id.wall_list);
         mLeftDrawer = (LinearLayout)v.findViewById(R.id.left_drawer);
+        mScrollLockCheck = (CheckBox)v.findViewById(R.id.scroll_lock_check);
+        mCentralContent = (RelativeLayout)v.findViewById(R.id.central_content);
         
         mHorizontalScroll.setScrollingEnabled(false);
+        mHorizontalScroll.setOnTouchListener(this);
         mVerticalScroll.setOnTouchListener(this);
+        mCentralContent.setOnTouchListener(this);
 //        mVerticalScroll.setClickable(true);
 //        mHorizontalScroll.setOnClickListener(this);
         mHorizontalScroll.setScrollViewListener(this);
         mVerticalScroll.setScrollViewListener(this);
+        mScrollLockCheck.setOnClickListener(this);
+        
+        int tColor = MainActivity.FLOOR_COLOUR;
+        tColor = Color.argb(200, Color.red(tColor), Color.green(tColor), 
+        		Color.blue(tColor)); 
+        mScrollLockCheck.setBackgroundColor(tColor);
         
         mLeftDrawer.setBackgroundColor(MainActivity.FLOOR_COLOUR);
         mWallList.setAdapter(new WallListAdapter());
@@ -162,6 +177,9 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
             		mHorizontalScroll.scrollTo(b.getInt(EXTRA_SCROLL_X), 0);
                 	mVerticalScroll.scrollTo(0, b.getInt(EXTRA_SCROLL_Y));
                 	mCurrentWallChoice = b.getInt(EXTRA_CURRENT_WALL_CHOICE);
+                	boolean checked = b.getBoolean(EXTRA_SCROLL_LOCK);
+                	if(checked)
+                		mScrollLockCheck.performClick();
             	}
             	updateData();
             }
@@ -177,6 +195,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 		target.putInt(EXTRA_SCROLL_X, mHorizontalScroll.getScrollX());
 		target.putInt(EXTRA_SCROLL_Y, mVerticalScroll.getScrollY());
 		target.putInt(EXTRA_CURRENT_WALL_CHOICE, mCurrentWallChoice);
+		target.putBoolean(EXTRA_SCROLL_LOCK, mScrollLockCheck.isChecked());
 	}
 	
 	@Override
@@ -266,6 +285,37 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	@Override
 	public boolean onTouch(View v, MotionEvent event) 
 	{	
+		Log.i(TAG, "Event action " + event.getActionMasked() + " on index " + event.getActionIndex() + " by " + v);
+		
+		if((mVerticalScroll.isScrollable() && v == mVerticalScroll || 
+				!mVerticalScroll.isScrollable() && (v instanceof ImageView))
+				&& event.getActionMasked() == MotionEvent.ACTION_UP)
+		{
+			// More hackery: interception galore
+			if(mPressDown)	// not cancelled by scrolling.
+			{
+				// Get the view from the visible spot
+				mPressDown = false;
+				if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
+						mWallChoices.length() - 1) || !Document.getInstance().isLoaded())
+					return false;
+				JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
+				if(obj == null)
+					return false;
+				int x = (int)((event.getX() + mHorizontalScroll.getScrollX()) 
+						/ mTileSize);
+				int y = (int)((event.getY() + mVerticalScroll.getScrollY())
+						/ mTileSize);
+				if(Global.inBounds(x, 0, LevelContainer.MAPSIZE - 1) &&
+						Global.inBounds(y, 0, LevelContainer.MAPSIZE - 1))
+				{
+					Document.getInstance().getLevels().setTile(mCurrentLevel, 0, 
+							LevelContainer.MAPSIZE * y + x, (short)obj.optInt("id"));
+					return true;
+				}
+			}
+		}
+		
 		if(v == mVerticalScroll)
 		{
 			if(event.getActionMasked() == MotionEvent.ACTION_MOVE)
@@ -273,37 +323,15 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 				if(mPressDown && System.currentTimeMillis() - mPressDownTimeMilli > 80)
 					mPressDown = false;	// cancel any pressed thing
 			}
-			if(event.getActionMasked() == MotionEvent.ACTION_UP)
-			{
-				// More hackery: interception galore
-				if(mPressDown)	// not cancelled by scrolling.
-				{
-					// Get the view from the visible spot
-					mPressDown = false;
-					if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
-							mWallChoices.length() - 1) || !Document.getInstance().isLoaded())
-						return false;
-					JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
-					if(obj == null)
-						return false;
-					int x = (int)((event.getX() + mHorizontalScroll.getScrollX()) 
-							/ mTileSize);
-					int y = (int)((event.getY() + mVerticalScroll.getScrollY())
-							/ mTileSize);
-					if(Global.inBounds(x, 0, LevelContainer.MAPSIZE - 1) &&
-							Global.inBounds(y, 0, LevelContainer.MAPSIZE - 1))
-					{
-						Document.getInstance().getLevels().setTile(mCurrentLevel, 0, 
-								LevelContainer.MAPSIZE * y + x, (short)obj.optInt("id"));
-						return true;
-					}
-				}
-			}
+			
 			
 			// LOL trickery
-			mHorizontalScroll.setScrollingEnabled(true);
-			mHorizontalScroll.dispatchTouchEvent(event);
-			mHorizontalScroll.setScrollingEnabled(false);
+			if(mVerticalScroll.isScrollable())
+			{
+				mHorizontalScroll.setScrollingEnabled(true);
+				mHorizontalScroll.dispatchTouchEvent(event);
+				mHorizontalScroll.setScrollingEnabled(false);
+			}
 			return false;
 		}
 		else if(v instanceof ImageView)
@@ -635,8 +663,12 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	@Override
 	public void onClick(View v) 
 	{
-		
-		if(v instanceof ImageView)
+		if(v == mScrollLockCheck)
+		{
+			mVerticalScroll.setScrollingEnabled(!mScrollLockCheck.isChecked());
+//			mHorizontalScroll.setScrollingEnabled(mScrollLockCheck.isChecked());
+		}
+		else if(v instanceof ImageView)
 		{
 			if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
 					mWallChoices.length() - 1))

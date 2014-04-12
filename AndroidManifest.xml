@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.ichera.wolfviewer.OpenActivity"
+            android:name="com.ichera.lib.filemanager.OpenActivity"
             android:label="@string/open_activity">
             <meta-data android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.ichera.wolfviewer.MainActivity"/>

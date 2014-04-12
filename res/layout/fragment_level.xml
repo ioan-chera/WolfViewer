@@ -2,17 +2,28 @@
 <android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
-    <com.ichera.wolfviewer.ui.VXScrollView android:id="@+id/vertical_scroll"
+    <RelativeLayout android:id="@+id/central_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <com.ichera.wolfviewer.ui.HXScrollView android:id="@+id/horizontal_scroll"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <RelativeLayout android:id="@+id/grid_layout"
-		        android:layout_width="0dp"
-		        android:layout_height="0dp"/>
-        </com.ichera.wolfviewer.ui.HXScrollView>
-    </com.ichera.wolfviewer.ui.VXScrollView>
+        <com.ichera.wolfviewer.ui.VXScrollView android:id="@+id/vertical_scroll"
+	        android:layout_width="match_parent"
+	        android:layout_height="match_parent">
+	        <com.ichera.wolfviewer.ui.HXScrollView android:id="@+id/horizontal_scroll"
+	            android:layout_width="match_parent"
+	            android:layout_height="wrap_content">
+	            <RelativeLayout android:id="@+id/grid_layout"
+			        android:layout_width="0dp"
+			        android:layout_height="0dp"/>
+	        </com.ichera.wolfviewer.ui.HXScrollView>
+	    </com.ichera.wolfviewer.ui.VXScrollView>
+	    <CheckBox android:id="@+id/scroll_lock_check"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentRight="true"
+	        android:layout_alignParentBottom="true"
+	        android:text="@string/scroll_lock"/>
+    </RelativeLayout>
+    
     <LinearLayout android:id="@+id/left_drawer"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
