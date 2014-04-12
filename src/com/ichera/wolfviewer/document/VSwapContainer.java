@@ -27,11 +27,11 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
-import com.ichera.wolfviewer.Global;
-import com.ichera.wolfviewer.Palette;
-
 import android.graphics.Bitmap;
 import android.support.v4.util.LruCache;
+
+import com.ichera.wolfviewer.FileUtil;
+import com.ichera.wolfviewer.Palette;
 
 /**
  * Container for VSWAP.WL6 data (walls, sprites, wave sound chunks)
@@ -99,8 +99,8 @@ public class VSwapContainer
 			bmp = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888);
 			
 			byte[] data = mPages.get(mSpriteStart + n);
-			int leftPixel = Global.readUInt16(data, 0);
-			int rightPixel = Global.readUInt16(data, 2);
+			int leftPixel = FileUtil.readUInt16(data, 0);
+			int rightPixel = FileUtil.readUInt16(data, 2);
 			if(leftPixel < 0 || leftPixel >= 64 || rightPixel < 0 || 
 					rightPixel >= 64 || rightPixel < leftPixel)
 				return null;
@@ -108,17 +108,17 @@ public class VSwapContainer
 			int x, y, i, j, topPixel, bottomPixel, postStart;
 			for(x = leftPixel, i = 4; x <= rightPixel; ++x, i += 2)
 			{
-				directoryOffset = Global.readUInt16(data, i);
+				directoryOffset = FileUtil.readUInt16(data, i);
 				j = directoryOffset;
 				for(;;)
 				{
-					bottomPixel = Global.readUInt16(data, j) / 2;
+					bottomPixel = FileUtil.readUInt16(data, j) / 2;
 					j += 2;
 					if(bottomPixel == 0)
 						break;
-					postStart = Global.readInt16(data, j);
+					postStart = FileUtil.readInt16(data, j);
 					j += 2;
-					topPixel = Global.readUInt16(data, j) / 2;
+					topPixel = FileUtil.readUInt16(data, j) / 2;
 					j += 2;
 					if(bottomPixel < 0 || bottomPixel > 64 || topPixel < 0 || 
 							topPixel >= 64 || bottomPixel <= topPixel)
@@ -187,17 +187,17 @@ public class VSwapContainer
 				return false;
 			raf = new RandomAccessFile(file, "r");
 
-			int newNumChunks = Global.readUInt16(raf);
-			int newSpriteStart = Global.readUInt16(raf);
-			int newSoundStart = Global.readUInt16(raf);
+			int newNumChunks = FileUtil.readUInt16(raf);
+			int newSpriteStart = FileUtil.readUInt16(raf);
+			int newSoundStart = FileUtil.readUInt16(raf);
 			
 			int[] pageOffsets = new int[newNumChunks + 1];
 			for(int i = 0; i < newNumChunks; ++i)
-				pageOffsets[i] = Global.readInt32(raf);
+				pageOffsets[i] = FileUtil.readInt32(raf);
 			
 			int[] pageLengths = new int[newNumChunks];
 			for(int i = 0; i < newNumChunks; ++i)
-				pageLengths[i] = Global.readUInt16(raf);
+				pageLengths[i] = FileUtil.readUInt16(raf);
 			
 			pageOffsets[newNumChunks] = (int)file.length();
 						

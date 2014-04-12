@@ -29,7 +29,8 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Stack;
 
-import com.ichera.wolfviewer.Global;
+import com.ichera.wolfviewer.Compression;
+import com.ichera.wolfviewer.FileUtil;
 
 public class LevelContainer 
 {
@@ -183,9 +184,9 @@ public class LevelContainer
 			int[] headerOffsets = new int[NUMMAPS];
 			
 			fis = new FileInputStream(mapHead);
-			newRlewTag = Global.readUInt16(fis);
+			newRlewTag = FileUtil.readUInt16(fis);
 			for(int i = 0; i < NUMMAPS; ++i)
-				headerOffsets[i] = Global.readInt32(fis);
+				headerOffsets[i] = FileUtil.readInt32(fis);
 			
 			fis.close();
 			fis = null;
@@ -204,12 +205,12 @@ public class LevelContainer
 					continue;
 				raf.seek(pos);
 				newHeader = new MapHeader();
-				newHeader.planeStart[0] = Global.readInt32(raf);
-				newHeader.planeStart[1] = Global.readInt32(raf);
-				newHeader.planeStart[2] = Global.readInt32(raf);
-				newHeader.planeLength[0] = Global.readUInt16(raf);
-				newHeader.planeLength[1] = Global.readUInt16(raf);
-				newHeader.planeLength[2] = Global.readUInt16(raf);
+				newHeader.planeStart[0] = FileUtil.readInt32(raf);
+				newHeader.planeStart[1] = FileUtil.readInt32(raf);
+				newHeader.planeStart[2] = FileUtil.readInt32(raf);
+				newHeader.planeLength[0] = FileUtil.readUInt16(raf);
+				newHeader.planeLength[1] = FileUtil.readUInt16(raf);
+				newHeader.planeLength[2] = FileUtil.readUInt16(raf);
 				raf.skipBytes(2 + 2);
 				raf.read(nameBuffer);
 				newLevelNames[i] = new String(nameBuffer, "UTF-8");
@@ -283,17 +284,17 @@ public class LevelContainer
 				compressedLength = newHeader.planeLength[plane] - 2;
 				raf.seek(pos);
 				// First read the intermediary length, then the compressed data
-				intermediaryLength = Global.readUInt16(raf);
+				intermediaryLength = FileUtil.readUInt16(raf);
 				if(compressedData == null || compressedData.length < compressedLength)
 					compressedData = new byte[compressedLength];
 				raf.read(compressedData, 0, compressedLength);
 				
 				// Compressed data -> Carmack Expand -> Intermediary data
-				intermediaryData = Global.carmackExpand(compressedData, 0, intermediaryLength);
+				intermediaryData = Compression.carmackExpand(compressedData, 0, intermediaryLength);
 				expandedLength = (intermediaryData[0] & 0xff) + (intermediaryData[1] & 0xff) * 256;
 				
 				// Intermediary data -> RLEW Expand -> Final data
-				ret[plane] = Global.rlewExpandByteToShort(intermediaryData, 2, 
+				ret[plane] = Compression.rlewExpandByteToShort(intermediaryData, 2, 
 						expandedLength, newRlewTag);
 			}
 		}
