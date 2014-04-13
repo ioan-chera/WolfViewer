@@ -19,4 +19,6 @@
 	<string name="tab_level">Level</string>
 	
 	<string name="scroll_lock">Scroll Lock</string>
+	<string name="contentdesc_open_level_drawer">Show tile menu</string>
+	<string name="contentdesc_close_level_drawer">Hide tile menu</string>
 </resources>

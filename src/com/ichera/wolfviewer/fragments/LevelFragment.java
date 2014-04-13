@@ -7,10 +7,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -75,6 +77,7 @@ public class LevelFragment extends SwitchableFragment implements
 	private LinearLayout mLeftDrawer;
 	private CheckBox mScrollLockCheck;
 	private RelativeLayout mCentralContent;
+	private ActionBarDrawerToggle mDrawerToggle;
 	
 	// display
 	private int mTileSize;
@@ -119,6 +122,9 @@ public class LevelFragment extends SwitchableFragment implements
 	@Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
+		if (mDrawerToggle.onOptionsItemSelected(item)) {
+	          return true;
+	    }
     	switch(item.getItemId())
     	{
     	case R.id.action_prev:
@@ -174,6 +180,7 @@ public class LevelFragment extends SwitchableFragment implements
         mGridLayout.getLayoutParams().width = 
     			mGridLayout.getLayoutParams().height = LevelContainer.MAPSIZE *
     			mTileSize;
+        
                 
         ViewTreeObserver observer = mVerticalScroll.getViewTreeObserver();
         observer.addOnGlobalLayoutListener(new OnGlobalLayoutListener() 
@@ -203,6 +210,28 @@ public class LevelFragment extends SwitchableFragment implements
 		
 		return v;
 	}
+	
+	@Override
+	public void onActivityCreated (Bundle savedInstanceState)
+	{
+		super.onActivityCreated(savedInstanceState);
+		mDrawerToggle = new ActionBarDrawerToggle(getActivity(), mDrawerLayout,
+				R.drawable.ic_drawer, R.string.contentdesc_open_level_drawer, 
+				R.string.contentdesc_close_level_drawer);
+		mDrawerLayout.setDrawerListener(mDrawerToggle);
+		((ActionBarActivity)getActivity()).getSupportActionBar()
+				.setDisplayHomeAsUpEnabled(true);
+		((ActionBarActivity)getActivity()).getSupportActionBar()
+				.setHomeButtonEnabled(true);
+		mDrawerToggle.syncState();
+	}
+	
+	@Override
+    public void onConfigurationChanged(Configuration newConfig) 
+	{
+        super.onConfigurationChanged(newConfig);
+        mDrawerToggle.onConfigurationChanged(newConfig);
+    }
 	
 	@Override
 	public void saveState(Bundle target) 
@@ -355,7 +384,7 @@ public class LevelFragment extends SwitchableFragment implements
 				v.setOnTouchListener(null);
 				float oldX = event.getX();
 				float oldY = event.getY();
-				Log.d("scroll", "old: " + oldX + " " + oldY);
+//				Log.d("scroll", "old: " + oldX + " " + oldY);
 				RelativeLayout.LayoutParams rllp = 
 						(RelativeLayout.LayoutParams)v.getLayoutParams();
 				float newX = oldX + rllp.leftMargin - 
@@ -363,9 +392,9 @@ public class LevelFragment extends SwitchableFragment implements
 				float newY = oldY + rllp.topMargin - 
 						mVerticalScroll.getScrollY();
 				event.setLocation(newX, newY);
-				Log.d("scroll", "scr: " + mHorizontalScroll.getScrollX() + " " 
-						+ mVerticalScroll.getScrollY());
-				Log.d("scroll", "new: " + newX + " " + newY);
+//				Log.d("scroll", "scr: " + mHorizontalScroll.getScrollX() + " " 
+//						+ mVerticalScroll.getScrollY());
+//				Log.d("scroll", "new: " + newX + " " + newY);
 				mVerticalScroll.dispatchTouchEvent(event);
 				event.setLocation(oldX, oldY);
 				v.setOnTouchListener(this);
