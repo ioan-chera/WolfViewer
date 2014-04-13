@@ -13,6 +13,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -91,7 +92,6 @@ public class LevelFragment extends SwitchableFragment implements
 	
 	// Item click control
 	private boolean mPressDown;
-	private long mPressDownTimeMilli;
 	
 	// Drawer
 	private DrawerLayout mDrawerLayout;
@@ -326,30 +326,47 @@ public class LevelFragment extends SwitchableFragment implements
 	////////////////////////////////////////////////////////////////////////////
 	// View.OnTouchListener
 	////////////////////////////////////////////////////////////////////////////
+		
+	private void hitTileOnView(MotionEvent event, int k, boolean makeSound)
+	{
+		int i, j;
+		j = (int)(MotionEventCompat.getX(event, k) 
+				+ mHorizontalScroll.getScrollX()) / mTileSize;
+		i = (int)(MotionEventCompat.getY(event, k) + 
+				mVerticalScroll.getScrollY()) / mTileSize;
+		if(j >= 0 && j < LevelContainer.MAPSIZE 
+				&& i >= 0 && i < LevelContainer.MAPSIZE)
+			if(mTileViews[i][j] != null)
+			{
+				onClick(mTileViews[i][j]);
+				if(makeSound)
+					mTileViews[i][j].playSoundEffect(
+							SoundEffectConstants.CLICK);
+			}
+	}
 	
 	@Override
 	public boolean onTouch(View v, MotionEvent event) 
 	{	
-		int action = event.getActionMasked();
+		int action = MotionEventCompat.getActionMasked(event);
 		
 		if(mScrollLockCheck.isChecked())
 		{
-			// We also need to avoid interferring with the left drawer
+			// We also need to avoid interfering with the left drawer
 			// Cancel DOWN if too left. But don't cancel MOVE if too left
 			if(v == mCentralContent 
-					&& !mDrawerLayout.isDrawerVisible(Gravity.LEFT) &&
-					(action != MotionEvent.ACTION_DOWN 
-					|| event.getX() >= mTileSize))
+					&& !mDrawerLayout.isDrawerVisible(Gravity.LEFT))
 			{
-				int i, j;
-				j = (int)(event.getX() + mHorizontalScroll.getScrollX()) 
-						/ mTileSize;
-				i = (int)(event.getY() + mVerticalScroll.getScrollY()) 
-						/ mTileSize;
-				if(j >= 0 && j < LevelContainer.MAPSIZE 
-						&& i >= 0 && i < LevelContainer.MAPSIZE)
-					if(mTileViews[i][j] != null)
-						onClick(mTileViews[i][j]);
+				int count = MotionEventCompat.getPointerCount(event);
+				for(int k = 0; k < count; ++k)
+				{
+					if(action != MotionEvent.ACTION_DOWN 
+							&& action != MotionEventCompat.ACTION_POINTER_DOWN 
+							|| MotionEventCompat.getX(event, k) >= mTileSize)
+					{
+						hitTileOnView(event, k, false);
+					}
+				}
 				return true;
 			}
 			return false;
@@ -366,45 +383,23 @@ public class LevelFragment extends SwitchableFragment implements
 				mHorizontalScroll.dispatchTouchEvent(event);
 				mHorizontalScroll.setScrollingEnabled(false);
 			}
+			if(action == MotionEvent.ACTION_DOWN || 
+					action == MotionEventCompat.ACTION_POINTER_DOWN)
+			{
+				mPressDown = true;
+				//return true;
+			}
+			else if(action == MotionEvent.ACTION_UP ||
+					action == MotionEvent.ACTION_POINTER_UP)
+			{
+				if(mPressDown)
+				{
+					hitTileOnView(event, (event.getAction() & 
+							MotionEvent.ACTION_POINTER_INDEX_MASK) >>
+							MotionEvent.ACTION_POINTER_INDEX_SHIFT, true);
+				}
+			}
 			return false;
-		}
-		else if(v instanceof ImageView)
-		{
-			if(action == MotionEvent.ACTION_DOWN 
-					//|| action == MotionEvent.ACTION_MOVE
-					)
-			{
-				// The horizontal scroller needs to receive ACTION_DOWN
-				// We also must return true from the button here
-				// So dispatch this event to the scroller, after adjusting
-				// coordinates
-				// NOTE: because of this, the mVerticalScroll has a flag to 
-				// intercept all movement, not just when it feels to. Let's hope
-				// we don't get even more side effects
-				v.setOnTouchListener(null);
-				float oldX = event.getX();
-				float oldY = event.getY();
-//				Log.d("scroll", "old: " + oldX + " " + oldY);
-				RelativeLayout.LayoutParams rllp = 
-						(RelativeLayout.LayoutParams)v.getLayoutParams();
-				float newX = oldX + rllp.leftMargin - 
-						mHorizontalScroll.getScrollX();
-				float newY = oldY + rllp.topMargin - 
-						mVerticalScroll.getScrollY();
-				event.setLocation(newX, newY);
-//				Log.d("scroll", "scr: " + mHorizontalScroll.getScrollX() + " " 
-//						+ mVerticalScroll.getScrollY());
-//				Log.d("scroll", "new: " + newX + " " + newY);
-				mVerticalScroll.dispatchTouchEvent(event);
-				event.setLocation(oldX, oldY);
-				v.setOnTouchListener(this);
-				return true;
-			}
-			else if(action == MotionEvent.ACTION_UP)
-			{
-				v.playSoundEffect(SoundEffectConstants.CLICK);
-				onClick(v);
-			}
 		}
 		return false;
 	}
@@ -419,7 +414,7 @@ public class LevelFragment extends SwitchableFragment implements
 	{
 		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
 		{
-			if(mPressDown && System.currentTimeMillis() - mPressDownTimeMilli > 80)
+			if(mPressDown)
 				mPressDown = false;	// cancel any pressed thing
 			
 			Document document = Document.getInstance();
@@ -491,7 +486,7 @@ public class LevelFragment extends SwitchableFragment implements
 		rllp.topMargin = i * mTileSize;
 		mTileViews[i][j].setLayoutParams(rllp);
 //		mTileViews[i][j].setOnClickListener(this);
-		mTileViews[i][j].setOnTouchListener(this);
+//		mTileViews[i][j].setOnTouchListener(this);
 //		mTileViews[i][j].setClickable(true);
 		mGridLayout.addView(mTileViews[i][j]);
 		
