@@ -11,13 +11,16 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -79,6 +82,10 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	// Item click control
 	private boolean mPressDown;
 	private long mPressDownTimeMilli;
+	
+	// Drawer
+	private DrawerLayout mDrawerLayout;
+	private boolean mDoNotPropagateScroll;
 		
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -126,6 +133,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 			final Bundle savedInstanceState)
 	{
 		View v = inflater.inflate(R.layout.fragment_level, container, false);
+		mDrawerLayout = (DrawerLayout)v;
 		
         mGridLayout = (RelativeLayout)v.findViewById(R.id.grid_layout);
         mVerticalScroll = (VXScrollView)v.findViewById(R.id.vertical_scroll);
@@ -138,6 +146,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
         mHorizontalScroll.setScrollingEnabled(false);
         mHorizontalScroll.setOnTouchListener(this);
         mVerticalScroll.setOnTouchListener(this);
+        mVerticalScroll.setAlwaysInterceptMove(true);
         mCentralContent.setOnTouchListener(this);
 //        mVerticalScroll.setClickable(true);
 //        mHorizontalScroll.setOnClickListener(this);
@@ -285,48 +294,38 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	@Override
 	public boolean onTouch(View v, MotionEvent event) 
 	{	
-		Log.i(TAG, "Event action " + event.getActionMasked() + " on index " + event.getActionIndex() + " by " + v);
+		int action = event.getActionMasked();
 		
-		if((mVerticalScroll.isScrollable() && v == mVerticalScroll || 
-				!mVerticalScroll.isScrollable() && (v instanceof ImageView))
-				&& event.getActionMasked() == MotionEvent.ACTION_UP)
+		Log.i(TAG, "" + v + " " + action);
+		if(mScrollLockCheck.isChecked())
 		{
-			// More hackery: interception galore
-			if(mPressDown)	// not cancelled by scrolling.
+			// We also need to avoid interferring with the left drawer
+			// Cancel DOWN if too left. But don't cancel MOVE if too left
+			if(v == mCentralContent 
+					&& !mDrawerLayout.isDrawerVisible(Gravity.LEFT) &&
+					(action != MotionEvent.ACTION_DOWN 
+					|| event.getX() >= mTileSize))
 			{
-				// Get the view from the visible spot
-				mPressDown = false;
-				if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
-						mWallChoices.length() - 1) || !Document.getInstance().isLoaded())
-					return false;
-				JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
-				if(obj == null)
-					return false;
-				int x = (int)((event.getX() + mHorizontalScroll.getScrollX()) 
-						/ mTileSize);
-				int y = (int)((event.getY() + mVerticalScroll.getScrollY())
-						/ mTileSize);
-				if(Global.inBounds(x, 0, LevelContainer.MAPSIZE - 1) &&
-						Global.inBounds(y, 0, LevelContainer.MAPSIZE - 1))
-				{
-					Document.getInstance().getLevels().setTile(mCurrentLevel, 0, 
-							LevelContainer.MAPSIZE * y + x, (short)obj.optInt("id"));
-					return true;
-				}
+				int i, j;
+				j = (int)(event.getX() + mHorizontalScroll.getScrollX()) 
+						/ mTileSize;
+				i = (int)(event.getY() + mVerticalScroll.getScrollY()) 
+						/ mTileSize;
+				if(j >= 0 && j < LevelContainer.MAPSIZE 
+						&& i >= 0 && i < LevelContainer.MAPSIZE)
+					if(mTileViews[i][j] != null)
+						onClick(mTileViews[i][j]);
+				return true;
 			}
+			return false;
 		}
-		
 		if(v == mVerticalScroll)
 		{
-			if(event.getActionMasked() == MotionEvent.ACTION_MOVE)
-			{
-				if(mPressDown && System.currentTimeMillis() - mPressDownTimeMilli > 80)
-					mPressDown = false;	// cancel any pressed thing
-			}
-			
-			
-			// LOL trickery
-			if(mVerticalScroll.isScrollable())
+			// LOL trickery needed to scroll the below horiz view while this is
+			// getting operated on
+			if(mVerticalScroll.isScrollable()
+					&& mDoNotPropagateScroll == false
+					)
 			{
 				mHorizontalScroll.setScrollingEnabled(true);
 				mHorizontalScroll.dispatchTouchEvent(event);
@@ -336,9 +335,35 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 		}
 		else if(v instanceof ImageView)
 		{
-			mPressDown = true;	
-			mPressDownTimeMilli = System.currentTimeMillis();
-			return false;
+			if(action == MotionEvent.ACTION_DOWN 
+					|| action == MotionEvent.ACTION_MOVE
+					)
+			{
+				// The horizontal scroller needs to receive ACTION_DOWN
+				// We also must return true from the button here
+				// So dispatch this event to the scroller, after adjusting
+				// coordinates
+				// NOTE: because of this, the mVerticalScroll has a flag to 
+				// intercept all movement, not just when it feels to. Let's hope
+				// we don't get even more side effects
+				v.setOnTouchListener(null);
+				float oldX = event.getX();
+				float oldY = event.getY();
+				RelativeLayout.LayoutParams rllp = 
+						(RelativeLayout.LayoutParams)v.getLayoutParams();
+				event.setLocation(oldX + rllp.leftMargin - 
+						mHorizontalScroll.getScrollX(), 
+						oldY + rllp.topMargin - mVerticalScroll.getScrollY());
+				mVerticalScroll.dispatchTouchEvent(event);
+				event.setLocation(oldX, oldY);
+				v.setOnTouchListener(this);
+				return true;
+			}
+			else if(action == MotionEvent.ACTION_UP)
+			{
+				v.playSoundEffect(SoundEffectConstants.CLICK);
+				onClick(v);
+			}
 		}
 		return false;
 	}
@@ -665,7 +690,8 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	{
 		if(v == mScrollLockCheck)
 		{
-			mVerticalScroll.setScrollingEnabled(!mScrollLockCheck.isChecked());
+			boolean isChecked = mScrollLockCheck.isChecked();
+			mVerticalScroll.setScrollingEnabled(!isChecked);
 //			mHorizontalScroll.setScrollingEnabled(mScrollLockCheck.isChecked());
 		}
 		else if(v instanceof ImageView)
@@ -693,8 +719,10 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 			updateGraphics(mTileViews[y][x], x, y);
 		else if(level == mCurrentLevel)
 		{
-			mHorizontalScroll.scrollTo(x * mTileSize - mViewportSize.x / 2, 0);
-			mVerticalScroll.scrollTo(0, y * mTileSize - mViewportSize.y / 2);
+			mHorizontalScroll.smoothScrollTo(x * mTileSize - 
+					mViewportSize.x / 2, 0);
+			mVerticalScroll.smoothScrollTo(0, y * mTileSize - 
+					mViewportSize.y / 2);
 		}
 	}
 

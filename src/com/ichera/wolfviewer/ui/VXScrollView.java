@@ -21,15 +21,24 @@ package com.ichera.wolfviewer.ui;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.ScrollView;
 
 public class VXScrollView extends ScrollView 
 {
 	private boolean mScrollable = true;
+	private boolean mAlwaysInterceptMove;
+	private int mSlop;	// we need this again
+	private float mStartX;	// needed for always-intercepting-horizontal
 	
 	public void setScrollingEnabled(boolean enabled) {
         mScrollable = enabled;
     }
+	
+	public void setAlwaysInterceptMove(boolean value)
+	{
+		mAlwaysInterceptMove = value;
+	}
 
     public boolean isScrollable() {
         return mScrollable;
@@ -40,7 +49,11 @@ public class VXScrollView extends ScrollView
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 // if we can scroll pass the event to the superclass
-                if (mScrollable) return super.onTouchEvent(ev);
+                if (mScrollable) 
+                {
+                	mStartX = ev.getX();
+                	return super.onTouchEvent(ev);
+                }
                 // only continue to handle the touch event if scrolling enabled
                 return mScrollable; // mScrollable is always false at this point
             default:
@@ -52,22 +65,35 @@ public class VXScrollView extends ScrollView
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         // Don't do anything with intercepted touch events if 
         // we are not scrollable
-        if (!mScrollable) return false;
-        else return super.onInterceptTouchEvent(ev);
+        if (!mScrollable) 
+        	return false;
+        else if(mAlwaysInterceptMove && Math.abs(ev.getX() - mStartX) > mSlop &&
+        		ev.getActionMasked() == MotionEvent.ACTION_MOVE)
+        	return true;
+        else 
+        	return super.onInterceptTouchEvent(ev);
     }
 	
     private ScrollViewListener scrollViewListener = null;
+    
+    void commonConstruct()
+    {
+    	mSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+    }
 
     public VXScrollView(Context context) {
         super(context);
+        commonConstruct();
     }
 
     public VXScrollView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        commonConstruct();
     }
 
     public VXScrollView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        commonConstruct();
     }
 
     public void setScrollViewListener(ScrollViewListener scrollViewListener) {
