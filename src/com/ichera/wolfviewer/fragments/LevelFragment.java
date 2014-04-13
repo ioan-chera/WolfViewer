@@ -29,6 +29,8 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -46,9 +48,14 @@ import com.ichera.wolfviewer.ui.ScrollViewListener;
 import com.ichera.wolfviewer.ui.VXScrollView;
 import com.ichera.wolfviewer.ui.VisibilityGrid;
 
-public class LevelFragment extends SwitchableFragment implements View.OnTouchListener,
-ScrollViewListener, VisibilityGrid.Delegate, View.OnClickListener, 
-LevelContainer.Observer, AdapterView.OnItemClickListener
+public class LevelFragment extends SwitchableFragment implements 
+	AdapterView.OnItemClickListener,
+	LevelContainer.Observer, 
+	OnCheckedChangeListener,
+	View.OnClickListener, 
+	View.OnTouchListener,
+	VisibilityGrid.Delegate, 
+	ScrollViewListener
 {
 	static final String TAG = "LevelFragment";
 	
@@ -153,6 +160,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
         mHorizontalScroll.setScrollViewListener(this);
         mVerticalScroll.setScrollViewListener(this);
         mScrollLockCheck.setOnClickListener(this);
+        mScrollLockCheck.setOnCheckedChangeListener(this);
         
         int tColor = MainActivity.FLOOR_COLOUR;
         tColor = Color.argb(200, Color.red(tColor), Color.green(tColor), 
@@ -187,8 +195,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
                 	mVerticalScroll.scrollTo(0, b.getInt(EXTRA_SCROLL_Y));
                 	mCurrentWallChoice = b.getInt(EXTRA_CURRENT_WALL_CHOICE);
                 	boolean checked = b.getBoolean(EXTRA_SCROLL_LOCK);
-                	if(checked)
-                		mScrollLockCheck.performClick();
+                	mScrollLockCheck.setChecked(checked);
             	}
             	updateData();
             }
@@ -296,7 +303,6 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	{	
 		int action = event.getActionMasked();
 		
-		Log.i(TAG, "" + v + " " + action);
 		if(mScrollLockCheck.isChecked())
 		{
 			// We also need to avoid interferring with the left drawer
@@ -336,7 +342,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 		else if(v instanceof ImageView)
 		{
 			if(action == MotionEvent.ACTION_DOWN 
-					|| action == MotionEvent.ACTION_MOVE
+					//|| action == MotionEvent.ACTION_MOVE
 					)
 			{
 				// The horizontal scroller needs to receive ACTION_DOWN
@@ -349,11 +355,17 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 				v.setOnTouchListener(null);
 				float oldX = event.getX();
 				float oldY = event.getY();
+				Log.d("scroll", "old: " + oldX + " " + oldY);
 				RelativeLayout.LayoutParams rllp = 
 						(RelativeLayout.LayoutParams)v.getLayoutParams();
-				event.setLocation(oldX + rllp.leftMargin - 
-						mHorizontalScroll.getScrollX(), 
-						oldY + rllp.topMargin - mVerticalScroll.getScrollY());
+				float newX = oldX + rllp.leftMargin - 
+						mHorizontalScroll.getScrollX();
+				float newY = oldY + rllp.topMargin - 
+						mVerticalScroll.getScrollY();
+				event.setLocation(newX, newY);
+				Log.d("scroll", "scr: " + mHorizontalScroll.getScrollX() + " " 
+						+ mVerticalScroll.getScrollY());
+				Log.d("scroll", "new: " + newX + " " + newY);
 				mVerticalScroll.dispatchTouchEvent(event);
 				event.setLocation(oldX, oldY);
 				v.setOnTouchListener(this);
@@ -688,13 +700,7 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 	@Override
 	public void onClick(View v) 
 	{
-		if(v == mScrollLockCheck)
-		{
-			boolean isChecked = mScrollLockCheck.isChecked();
-			mVerticalScroll.setScrollingEnabled(!isChecked);
-//			mHorizontalScroll.setScrollingEnabled(mScrollLockCheck.isChecked());
-		}
-		else if(v instanceof ImageView)
+		if(v instanceof ImageView)
 		{
 			if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0, 
 					mWallChoices.length() - 1))
@@ -708,6 +714,13 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 			Document.getInstance().getLevels().setTile(mCurrentLevel, 0, v.getId(), 
 					(short)obj.optInt("id"));
 		}
+	}
+	
+	@Override
+	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) 
+	{
+		if(buttonView == mScrollLockCheck)
+			mVerticalScroll.setScrollingEnabled(!isChecked);
 	}
 
 	@Override
@@ -749,5 +762,5 @@ LevelContainer.Observer, AdapterView.OnItemClickListener
 		return false;
 	}
 
-	
+		
 }
