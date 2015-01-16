@@ -22,15 +22,10 @@ import android.content.Intent;
 import android.media.AudioTrack;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.os.Build;
 
 import org.i_chera.wolfensteineditor.document.Document;
 import org.i_chera.wolfensteineditor.fragments.LevelFragment;
@@ -118,7 +113,6 @@ public class MainActivity extends ActionBarActivity
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_OPEN_WOLF && resultCode == RESULT_OK)
         {
-            // TODO: reimplement
             mCurrentPath = new File(data.getStringExtra(OpenActivity.EXTRA_CURRENT_PATH));
 
             if(mDocumentLoadAsyncTask != null)

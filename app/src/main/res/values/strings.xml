@@ -22,4 +22,7 @@
 	<string name="scroll_lock">Scroll Lock</string>
 	<string name="contentdesc_open_level_drawer">Show tile menu</string>
 	<string name="contentdesc_close_level_drawer">Hide tile menu</string>
+
+    <string name="welcome">Welcome to the Wolfenstein 3D Editor. Open a level set to get started.</string>
+    <string name="open_levels">Open Levels&#8230;</string>
 </resources>

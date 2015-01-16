@@ -5,7 +5,27 @@
     <TextView android:id="@+id/progress_info_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"
         android:visibility="gone"/>
+    <TextView
+        android:id="@+id/titleView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/welcome"
+        android:layout_marginRight="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:textSize="18sp"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:text="@string/open_levels"
+        android:layout_below="@id/titleView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"/>
     <ProgressBar android:id="@+id/progress_indicator"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
