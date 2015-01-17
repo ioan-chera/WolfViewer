@@ -50,6 +50,7 @@ public class MainActivity extends ActionBarActivity
     private Bundle mLevelBundle;
 
     private SwitchableFragment mCurrentFragment;
+    private StartFragment mStartFragment;
 
     // saved
     private File mCurrentPath;
@@ -84,6 +85,8 @@ public class MainActivity extends ActionBarActivity
             mStartBundle = savedInstanceState.getBundle(EXTRA_FRAGMENT_START);
             establishCurrentFragment();
         }
+
+        mStartFragment = (StartFragment)showFragment(StartFragment.class, mStartBundle);
     }
 
     @Override
@@ -215,12 +218,12 @@ public class MainActivity extends ActionBarActivity
      */
     private class DocumentLoadAsyncTask extends AsyncTask<File, String, Boolean>
     {
-        StartFragment mStartFragment;
+
         @Override
         protected void onPreExecute()
         {
-            mStartFragment = (StartFragment)showFragment(StartFragment.class, mStartBundle);
-            mStartFragment.startProgress();
+            if(mStartFragment != null)
+                mStartFragment.startProgress();
             // TODO: disable access to all fragments while executing
         }
 
