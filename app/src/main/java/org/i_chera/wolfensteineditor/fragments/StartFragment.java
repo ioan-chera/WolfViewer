@@ -22,8 +22,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 
 import org.i_chera.wolfensteineditor.R;
 
@@ -31,8 +29,8 @@ import org.i_chera.wolfensteineditor.R;
  * Created by ioan_chera on 15.01.2015.
  */
 public class StartFragment extends SwitchableFragment {
-    private ProgressBar mProgressIndicator;
-    private TextView mProgressInfoLabel;
+//    private ProgressBar mProgressIndicator;
+//    private TextView mProgressInfoLabel;
 
     private boolean mDeferStartProgress;
 
@@ -42,8 +40,9 @@ public class StartFragment extends SwitchableFragment {
     {
         View v = inflater.inflate(R.layout.fragment_start, container, false);
 
-        mProgressIndicator = (ProgressBar)v.findViewById(R.id.progress_indicator);
-        mProgressInfoLabel = (TextView)v.findViewById(R.id.progress_info_label);
+        // TODO: find other outlets for this
+//        mProgressIndicator = (ProgressBar)v.findViewById(R.id.progress_indicator);
+//        mProgressInfoLabel = (TextView)v.findViewById(R.id.progress_info_label);
 
         if(mDeferStartProgress)
             startProgress();
@@ -55,28 +54,28 @@ public class StartFragment extends SwitchableFragment {
 
     public void startProgress()
     {
-        if(mProgressIndicator == null)
+//        if(mProgressIndicator == null)
         {
             mDeferStartProgress = true;
-            return;
+//            return;
         }
 
-        mDeferStartProgress = false;
+//        mDeferStartProgress = false;
 
-        mProgressIndicator.setVisibility(View.VISIBLE);
-        mProgressInfoLabel.setVisibility(View.VISIBLE);
-        mProgressInfoLabel.setText("");
+//        mProgressIndicator.setVisibility(View.VISIBLE);
+//        mProgressInfoLabel.setVisibility(View.VISIBLE);
+//        mProgressInfoLabel.setText("");
     }
 
     public void setProgressText(String text)
     {
-        mProgressInfoLabel.setText(text);
+//        mProgressInfoLabel.setText(text);
     }
 
     public void endProgress()
     {
-        mProgressIndicator.setVisibility(View.GONE);
-        mProgressInfoLabel.setVisibility(View.GONE);
+//        mProgressIndicator.setVisibility(View.GONE);
+//        mProgressInfoLabel.setVisibility(View.GONE);
     }
 
     @Override

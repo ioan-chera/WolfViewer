@@ -1,48 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
-    <TextView android:id="@+id/progress_info_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:gravity="center"
-        android:layout_marginBottom="20dp"
-        android:visibility="gone"/>
+    android:layout_height="match_parent"
+    android:padding="20dp">
     <TextView
         android:id="@+id/titleView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/welcome"
-        android:layout_marginRight="20dp"
-        android:layout_marginLeft="20dp"
-        android:layout_marginTop="20dp"
         android:gravity="center"
         android:textSize="18sp"
         android:textColor="@android:color/black"/>
+
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="20dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
         android:layout_below="@id/titleView"
         android:background="@android:color/black"
-        android:layout_above="@+id/progress_indicator"/>
-
+        android:layout_above="@+id/open_button"/>
 
     <Button
+        android:id="@id/open_button"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:text="@string/open_levels"
-        android:layout_below="@id/titleView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"/>
-    <ProgressBar android:id="@+id/progress_indicator"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_margin="20dp"
-        android:indeterminate="true"
-        android:visibility="invisible"/>
+        android:layout_centerHorizontal="true"/>
 
 </RelativeLayout>
