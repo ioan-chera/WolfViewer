@@ -2,6 +2,7 @@ package org.i_chera.wolfensteineditor.fragments;
 
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,15 +17,12 @@ import org.i_chera.wolfensteineditor.R;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by ioan_chera on 17.01.2015.
  */
 public class FileOpenFragment extends Fragment
 {
-    private static final String DEFAULT_PATH = "/sdcard";
-
     // State
     private File mPath;
     private static final String KEY_Path = "Path";
@@ -39,15 +37,22 @@ public class FileOpenFragment extends Fragment
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
+        // Get saved instance data
+        if(savedInstanceState != null) {
+            String pathString = savedInstanceState.getString(KEY_Path);
+            mPath = new File(pathString);
+        }
+        else
+            mPath = Environment.getExternalStorageDirectory();  // TODO: restore path
+
         super.onCreate(savedInstanceState);
-
-
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState)
     {
-        outState.putString(KEY_Path, mPath.getPath());
+        String path = mPath.getPath();
+        outState.putString(KEY_Path, path);
         super.onSaveInstanceState(outState);
     }
 
@@ -57,13 +62,7 @@ public class FileOpenFragment extends Fragment
 
         View v = inflater.inflate(R.layout.fragment_file_open, null);
 
-        if(savedInstanceState != null) {
-            String pathString = savedInstanceState.getString(KEY_Path);
-            mPath = new File(pathString);
-        }
-        else
-            mPath = new File(DEFAULT_PATH);  // TODO: restore path
-
+        // Get views
         mPathView = (TextView)v.findViewById(R.id.pathView);
         mListView = (ListView)v.findViewById(R.id.listView);
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -78,15 +77,16 @@ public class FileOpenFragment extends Fragment
             }
         });
 
-        Log.i("FileOpen", "open create");
+        // Set derived data
         setFileList(mPath);
+        // Must be set here
         mListView.setAdapter(new PathAdapter());
+
         return v;
     }
 
     private void setFileList(File dir)
     {
-        Log.i("FileOpen", "open path " + dir.getPath());
         File[] files = dir.listFiles();
         if(files != null)
             Arrays.sort(files);

@@ -24,6 +24,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,8 +36,8 @@ import org.i_chera.wolfensteineditor.R;
  */
 public class StartFragment extends SwitchableFragment {
 
+    // Dynamic/automatic
     private ViewPager mPager;
-    private FileOpenFragment mFileOpenFragment;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -44,7 +45,10 @@ public class StartFragment extends SwitchableFragment {
     {
         View v = inflater.inflate(R.layout.fragment_start, container, false);
         mPager = (ViewPager)v.findViewById(R.id.pager);
+
+        // Needs to be set now
         mPager.setAdapter(new StartAdapter(getChildFragmentManager()));
+
         return v;
     }
 
@@ -64,7 +68,6 @@ public class StartFragment extends SwitchableFragment {
     @Override
     protected void saveState(Bundle target)
     {
-
     }
 
     @Override
@@ -73,7 +76,7 @@ public class StartFragment extends SwitchableFragment {
         return false;
     }
 
-    private class StartAdapter extends FragmentStatePagerAdapter
+    private class StartAdapter extends FragmentPagerAdapter
     {
 
         public StartAdapter(FragmentManager fm)

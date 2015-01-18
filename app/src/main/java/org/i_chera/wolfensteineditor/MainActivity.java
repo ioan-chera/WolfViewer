@@ -85,8 +85,8 @@ public class MainActivity extends ActionBarActivity
             mStartBundle = savedInstanceState.getBundle(EXTRA_FRAGMENT_START);
             establishCurrentFragment();
         }
-
-        mStartFragment = (StartFragment)showFragment(StartFragment.class, mStartBundle);
+        else
+            mStartFragment = (StartFragment)showFragment(StartFragment.class, mStartBundle);
     }
 
     @Override
@@ -173,8 +173,10 @@ public class MainActivity extends ActionBarActivity
             mCurrentFragment = curFragment;
             if(curFragment instanceof LevelFragment)
                 curFragment.setStateBundle(mLevelBundle);
-            else if(curFragment instanceof StartFragment)
+            else if(curFragment instanceof StartFragment) {
+                mStartFragment = (StartFragment)curFragment;
                 curFragment.setStateBundle(mStartBundle);
+            }
         }
     }
 
