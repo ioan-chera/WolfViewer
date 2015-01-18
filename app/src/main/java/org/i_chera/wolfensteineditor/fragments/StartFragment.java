@@ -19,6 +19,11 @@ package org.i_chera.wolfensteineditor.fragments;
  */
 
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,43 +34,21 @@ import org.i_chera.wolfensteineditor.R;
  * Created by ioan_chera on 15.01.2015.
  */
 public class StartFragment extends SwitchableFragment {
-//    private ProgressBar mProgressIndicator;
-//    private TextView mProgressInfoLabel;
 
-    private boolean mDeferStartProgress;
+    private ViewPager mPager;
+    private FileOpenFragment mFileOpenFragment;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState)
     {
         View v = inflater.inflate(R.layout.fragment_start, container, false);
-
-        // TODO: find other outlets for this
-//        mProgressIndicator = (ProgressBar)v.findViewById(R.id.progress_indicator);
-//        mProgressInfoLabel = (TextView)v.findViewById(R.id.progress_info_label);
-
-        if(mDeferStartProgress)
-            startProgress();
-
+        mPager = (ViewPager)v.findViewById(R.id.pager);
+        mPager.setAdapter(new StartAdapter(getChildFragmentManager()));
         return v;
     }
 
     ////////////////////////////////////////////////////////////////////////////
-
-    public void startProgress()
-    {
-//        if(mProgressIndicator == null)
-        {
-            mDeferStartProgress = true;
-//            return;
-        }
-
-//        mDeferStartProgress = false;
-
-//        mProgressIndicator.setVisibility(View.VISIBLE);
-//        mProgressInfoLabel.setVisibility(View.VISIBLE);
-//        mProgressInfoLabel.setText("");
-    }
 
     public void setProgressText(String text)
     {
@@ -88,5 +71,31 @@ public class StartFragment extends SwitchableFragment {
     public boolean handleBackButton()
     {
         return false;
+    }
+
+    private class StartAdapter extends FragmentStatePagerAdapter
+    {
+
+        public StartAdapter(FragmentManager fm)
+        {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int i) {
+            return new FileOpenFragment();
+        }
+
+        @Override
+        public int getCount() {
+            return 1;
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position)
+        {
+            return "Browse";
+        }
+
     }
 }

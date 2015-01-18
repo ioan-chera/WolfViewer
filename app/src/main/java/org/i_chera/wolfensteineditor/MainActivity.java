@@ -222,8 +222,8 @@ public class MainActivity extends ActionBarActivity
         @Override
         protected void onPreExecute()
         {
-            if(mStartFragment != null)
-                mStartFragment.startProgress();
+//            if(mStartFragment != null)
+//                mStartFragment.startProgress();
             // TODO: disable access to all fragments while executing
         }
 

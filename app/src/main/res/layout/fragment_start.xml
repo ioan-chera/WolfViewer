@@ -6,22 +6,27 @@
         android:id="@+id/titleView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="20dp"
+        android:padding="@dimen/standard_space"
         android:text="@string/welcome"
         android:gravity="center"
         android:textSize="18sp"
         android:textColor="@android:color/black"
         android:background="@drawable/bright_gradient"/>
-
-    <ListView
-        android:id="@+id/listView"
+    <android.support.v4.view.ViewPager
+        android:id="@+id/pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
+        android:layout_marginLeft="@dimen/standard_space"
+        android:layout_marginRight="@dimen/standard_space"
         android:layout_below="@id/titleView"
-        android:background="@color/lowgrey"
-        android:layout_above="@+id/open_button_container"/>
+        android:layout_above="@+id/open_button_container"
+        android:background="@color/lowgrey">
+        <android.support.v4.view.PagerTitleStrip
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:textColor="@android:color/white"/>
+    </android.support.v4.view.ViewPager>
 
     <FrameLayout
         android:id="@id/open_button_container"
@@ -33,11 +38,12 @@
         <Button
             android:id="@id/open_button"
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
+            android:layout_height="@dimen/button_touchable"
             android:text="@string/open_levels"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="@dimen/standard_space"
             android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="20dp"/>
+            android:layout_marginBottom="@dimen/standard_space"
+            android:minWidth="200dp"/>
 
         </FrameLayout>
 

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/pathView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/button_touchable"
+        android:textColor="@android:color/white"
+        android:paddingLeft="@dimen/standard_space"
+        android:paddingRight="@dimen/standard_space"
+        android:gravity="center"
+        android:background="@drawable/dark_gradient"/>
+    <ListView
+        android:id="@+id/listView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/pathView"
+        android:background="@drawable/dark_gradient"/>
+
+
+</RelativeLayout>
