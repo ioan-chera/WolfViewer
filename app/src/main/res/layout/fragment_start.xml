@@ -16,8 +16,6 @@
         android:id="@+id/pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginLeft="@dimen/standard_space"
-        android:layout_marginRight="@dimen/standard_space"
         android:layout_below="@id/titleView"
         android:layout_above="@+id/open_button_container"
         android:background="@color/lowgrey">

@@ -8,10 +8,18 @@
         android:layout_height="wrap_content"
         android:minHeight="@dimen/button_touchable"
         android:textColor="@android:color/white"
-        android:paddingLeft="@dimen/standard_space"
-        android:paddingRight="@dimen/standard_space"
+        android:paddingLeft="@dimen/button_touchable"
+        android:paddingRight="@dimen/button_touchable"
         android:gravity="center"
         android:background="@drawable/dark_gradient"/>
+    <ImageView
+        android:id="@+id/upButton"
+        android:layout_width="@dimen/button_touchable"
+        android:layout_height="@dimen/button_touchable"
+        android:layout_alignLeft="@id/pathView"
+        android:layout_alignTop="@id/pathView"
+        android:src="@drawable/ic_action_back"
+        android:scaleType="centerInside"/>
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"

@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -33,6 +34,7 @@ public class FileOpenFragment extends Fragment
     // controls
     private TextView mPathView;
     private ListView mListView;
+    private ImageView mUpButton;
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -65,6 +67,18 @@ public class FileOpenFragment extends Fragment
         // Get views
         mPathView = (TextView)v.findViewById(R.id.pathView);
         mListView = (ListView)v.findViewById(R.id.listView);
+        mUpButton = (ImageView)v.findViewById(R.id.upButton);
+        mUpButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                if(mPath.getParent() != null)
+                {
+                    mPath = new File(mPath.getParent());
+                    setFileList(mPath);
+                }
+            }
+        });
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -88,6 +102,7 @@ public class FileOpenFragment extends Fragment
     private void setFileList(File dir)
     {
         File[] files = dir.listFiles();
+        mUpButton.setVisibility(dir.getParent() != null ? View.VISIBLE : View.GONE);
         if(files != null)
             Arrays.sort(files);
         if(mFileList != files)
