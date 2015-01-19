@@ -22,7 +22,9 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
@@ -53,6 +55,7 @@ import org.i_chera.wolfensteineditor.Global;
 import org.i_chera.wolfensteineditor.MainActivity;
 import org.i_chera.wolfensteineditor.Palette;
 import org.i_chera.wolfensteineditor.R;
+import org.i_chera.wolfensteineditor.RunnableArg;
 import org.i_chera.wolfensteineditor.document.Document;
 import org.i_chera.wolfensteineditor.document.LevelContainer;
 import org.i_chera.wolfensteineditor.ui.HXScrollView;
@@ -63,13 +66,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
 /**
  * Created by ioan_chera on 15.01.2015.
  */
-public class LevelFragment extends SwitchableFragment implements
+public class LevelFragment extends Fragment implements
         AdapterView.OnItemClickListener,
         LevelContainer.Observer,
         CompoundButton.OnCheckedChangeListener,
@@ -80,13 +84,19 @@ public class LevelFragment extends SwitchableFragment implements
 {
     static final String TAG = "LevelFragment";
 
+    // State
     private static final String EXTRA_CURRENT_LEVEL = "currentLevel";
     private static final String EXTRA_SCROLL_X = "scrollX";
     private static final String EXTRA_SCROLL_Y = "scrollY";
     private static final String EXTRA_SCROLL_LOCK = "scrollLock";
     private static final String EXTRA_CURRENT_WALL_CHOICE = "currentWallChoice";
+    public static final String ARG_PATH_NAME = "pathName";
     private int mCurrentLevel;
     private int mCurrentWallChoice;
+    private File mPath;
+
+    // document
+    private Document mDocument;
 
     // widgets
     private RelativeLayout mGridLayout;
@@ -119,10 +129,13 @@ public class LevelFragment extends SwitchableFragment implements
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        Bundle b = getActualState(savedInstanceState);
-        if(b != null)
+        if(savedInstanceState != null)
         {
-            mCurrentLevel = b.getInt(EXTRA_CURRENT_LEVEL);
+            mCurrentLevel = savedInstanceState.getInt(EXTRA_CURRENT_LEVEL);
+        }
+        if(getArguments() != null)
+        {
+            mPath = new File(getArguments().getString(ARG_PATH_NAME));
         }
 
         mTileSize = (int)(48 * Global.getScale());
@@ -213,13 +226,12 @@ public class LevelFragment extends SwitchableFragment implements
                         .removeGlobalOnLayoutListener(this);
                 mViewportSize = new Point(mVerticalScroll.getMeasuredWidth(),
                         mVerticalScroll.getMeasuredHeight());
-                Bundle b = getActualState(savedInstanceState);
-                if(b != null)
+                if(savedInstanceState != null)
                 {
-                    mHorizontalScroll.scrollTo(b.getInt(EXTRA_SCROLL_X), 0);
-                    mVerticalScroll.scrollTo(0, b.getInt(EXTRA_SCROLL_Y));
-                    mCurrentWallChoice = b.getInt(EXTRA_CURRENT_WALL_CHOICE);
-                    boolean checked = b.getBoolean(EXTRA_SCROLL_LOCK);
+                    mHorizontalScroll.scrollTo(savedInstanceState.getInt(EXTRA_SCROLL_X), 0);
+                    mVerticalScroll.scrollTo(0, savedInstanceState.getInt(EXTRA_SCROLL_Y));
+                    mCurrentWallChoice = savedInstanceState.getInt(EXTRA_CURRENT_WALL_CHOICE);
+                    boolean checked = savedInstanceState.getBoolean(EXTRA_SCROLL_LOCK);
                     mScrollLockCheck.setChecked(checked);
                 }
                 updateData();
@@ -244,6 +256,12 @@ public class LevelFragment extends SwitchableFragment implements
         mDrawerToggle.syncState();
     }
 
+    public void setDocument(Document document)
+    {
+        mDocument = document;
+    }
+
+
     @Override
     public void onConfigurationChanged(Configuration newConfig)
     {
@@ -252,36 +270,91 @@ public class LevelFragment extends SwitchableFragment implements
     }
 
     @Override
-    public void saveState(Bundle target)
+    public void onSaveInstanceState(Bundle target)
     {
         target.putInt(EXTRA_CURRENT_LEVEL, mCurrentLevel);
         target.putInt(EXTRA_SCROLL_X, mHorizontalScroll.getScrollX());
         target.putInt(EXTRA_SCROLL_Y, mVerticalScroll.getScrollY());
         target.putInt(EXTRA_CURRENT_WALL_CHOICE, mCurrentWallChoice);
         target.putBoolean(EXTRA_SCROLL_LOCK, mScrollLockCheck.isChecked());
+        super.onSaveInstanceState(target);
     }
 
     @Override
     public void onResume()
     {
         super.onResume();
-        if(Document.getInstance().isLoaded())
+        if(mDocument == null)
+        {
+            mDocument = new Document();
+        }
+        if(mDocument.isLoaded())
         {
             Log.i(TAG, "Adding observer");
-            Document.getInstance().getLevels().addObserver(this);
+            mDocument.getLevels().addObserver(this);
         }
         else
-            mDeferAddObserver = true;
+        {
+            // TODO: finish both this and the FileOpenFragment one and put them in a common place
+            final File path = mPath;
+            final Document document = mDocument;
+            new AsyncTask<Void, String, Document>() {
+
+                @Override
+                protected void onPreExecute() {
+                    // TODO: init progress
+                }
+
+                @Override
+                protected Document doInBackground(Void... params) {
+                    boolean result = document.loadFromDirectory(path, new RunnableArg<String>() {
+                        @Override
+                        public void run() {
+                            publishProgress(mArgs);
+                        }
+                    });
+                    return result ? document : null;
+                }
+
+                @Override
+                protected void onProgressUpdate(String... values) {
+                    // TODO: display progress
+                }
+
+                @Override
+                protected void onPostExecute(Document document) {
+                    // TODO: end progress
+                    if(getActivity() == null) {
+                        Log.w("FileOpenFragment", "Async task finished after activity was destroyed");
+                        return;
+                    }
+
+                    mDocument = document;
+
+                    if (document != null) {
+                        // Just create a new fragment with the data ready.
+                        ((MainActivity) getActivity()).goToLevelFragment(document, path);
+                    }
+                    else
+                    {
+                        Global.showErrorAlert(getActivity(), "Level Load Error", "Couldn't open data " +
+                                "from directory " + path.getPath());
+                        ((MainActivity)getActivity()).goToStartFragment();
+                    }
+                }
+
+            };
+        }
     }
 
     @Override
     public void onPause()
     {
         super.onPause();
-        if(Document.getInstance().isLoaded())
+        if(mDocument != null && mDocument.isLoaded())
         {
             Log.i(TAG, "Removing observer");
-            Document.getInstance().getLevels().removeObserver(this);
+            mDocument.getLevels().removeObserver(this);
         }
     }
 
@@ -296,20 +369,13 @@ public class LevelFragment extends SwitchableFragment implements
     {
         if(mGridLayout == null)
             return;	// will be done anyway upon creation
-        if(Document.getInstance().isLoaded() && mDeferAddObserver)
-        {
-            Log.i(TAG, "Adding deferred observer");
-            mDeferAddObserver = false;
-            Document.getInstance().getLevels().addObserver(this);
-        }
         updateGridLayout();
         ((WallListAdapter)mWallList.getAdapter()).notifyDataSetChanged();
     }
 
     private void updateGridLayout()
     {
-        Document document = Document.getInstance();
-        if(!document.isLoaded())
+        if(!mDocument.isLoaded())
             return;
 
         if(mCurrentLevel < 0)
@@ -319,7 +385,7 @@ public class LevelFragment extends SwitchableFragment implements
 
         if(getActivity() instanceof ActionBarActivity)
             ((ActionBarActivity)getActivity()).getSupportActionBar()
-                    .setTitle(document.getLevels().getLevelName(mCurrentLevel));
+                    .setTitle(mDocument.getLevels().getLevelName(mCurrentLevel));
 
         int ceilingColour = Palette.WL6[LevelContainer
                 .getCeilingColour(mCurrentLevel)];
@@ -435,8 +501,7 @@ public class LevelFragment extends SwitchableFragment implements
             if(mPressDown)
                 mPressDown = false;	// cancel any pressed thing
 
-            Document document = Document.getInstance();
-            if(document == null || !document.isLoaded())
+            if(mDocument == null || !mDocument.isLoaded())
                 return;
             if(mVisGrid == null)
                 return;
@@ -569,22 +634,21 @@ public class LevelFragment extends SwitchableFragment implements
 
     private void updateGraphics(ImageView iv, int x, int y)
     {
-        Document document = Document.getInstance();
 //		short[][] level = document.getLevels().getLevel(mCurrentLevel);
 
 //    	short[] wallplane = level[0];
 //    	short[] actorplane = level[1];
 
-        int cell = document.getLevels().getTile(mCurrentLevel, 0, x, y);
+        int cell = mDocument.getLevels().getTile(mCurrentLevel, 0, x, y);
 
-        if(!setBitmapFromMapValue(document, iv, cell))
+        if(!setBitmapFromMapValue(mDocument, iv, cell))
         {
             cell = Global.getActorSpriteMap().get(
-                    document.getLevels().getTile(mCurrentLevel, 1, x, y), -1);
+                    mDocument.getLevels().getTile(mCurrentLevel, 1, x, y), -1);
             if(cell == -1)
                 iv.setImageBitmap(null);
             else
-                iv.setImageBitmap(document.getVSwap().getSpriteBitmap(cell));
+                iv.setImageBitmap(mDocument.getVSwap().getSpriteBitmap(cell));
         }
     }
 
@@ -618,13 +682,6 @@ public class LevelFragment extends SwitchableFragment implements
 
     private class WallListAdapter extends BaseAdapter
     {
-        private Document mDocument;
-
-        WallListAdapter()
-        {
-            mDocument = Document.getInstance();
-        }
-
         @Override
         public int getCount()
         {
@@ -753,7 +810,7 @@ public class LevelFragment extends SwitchableFragment implements
 //			Log.i(TAG, "Clicked " + v.getId() % 64 + " " + v.getId() / 64 + " real " +
 //				((RelativeLayout.LayoutParams)v.getLayoutParams()).leftMargin / v.getWidth() + " " +
 //				((RelativeLayout.LayoutParams)v.getLayoutParams()).topMargin / v.getHeight());
-            Document.getInstance().getLevels().setTile(mCurrentLevel, 0, v.getId(),
+            mDocument.getLevels().setTile(mCurrentLevel, 0, v.getId(),
                     (short)obj.optInt("id"));
         }
     }
@@ -791,14 +848,13 @@ public class LevelFragment extends SwitchableFragment implements
         }
     }
 
-    @Override
     public boolean handleBackButton()
     {
-        if(Document.getInstance().isLoaded() &&
+        if(mDocument != null && mDocument.isLoaded() &&
                 Global.inBounds(mCurrentLevel, 0, LevelContainer.NUMMAPS - 1)
-                && Document.getInstance().getLevels().hasUndo(mCurrentLevel))
+                && mDocument.getLevels().hasUndo(mCurrentLevel))
         {
-            Document.getInstance().getLevels().undo(mCurrentLevel);
+            mDocument.getLevels().undo(mCurrentLevel);
             return true;
         }
         return false;

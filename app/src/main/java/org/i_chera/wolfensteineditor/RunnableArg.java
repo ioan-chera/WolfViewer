@@ -23,7 +23,7 @@ package org.i_chera.wolfensteineditor;
  */
 public abstract class RunnableArg<T> implements Runnable {
 
-    T[] mArgs;
+    public T[] mArgs;
 
     public RunnableArg() {
     }

@@ -21,6 +21,7 @@ package org.i_chera.wolfensteineditor;
 import android.content.Intent;
 import android.media.AudioTrack;
 import android.os.AsyncTask;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
@@ -37,29 +38,9 @@ import java.io.File;
 
 public class MainActivity extends ActionBarActivity
 {
-
     static final String TAG = "MainActivity";
-
-    private static final int REQUEST_OPEN_WOLF = 1;
-    private static final String EXTRA_CURRENT_PATH = "currentPath";
-
-    private static final String EXTRA_FRAGMENT_START = "fragmentStart";
-    private static final String EXTRA_FRAGMENT_LEVEL = "fragmentLevel";
-
-    private Bundle mStartBundle;
-    private Bundle mLevelBundle;
-
-    private SwitchableFragment mCurrentFragment;
-    private StartFragment mStartFragment;
-
-    // saved
-    private File mCurrentPath;
-
-    // generated
-    private Document mDocument;
-
-    // workers
-    private DocumentLoadAsyncTask mDocumentLoadAsyncTask;
+    private static final String TAG_START_FRAGMENT = "startFragment";
+    private static final String TAG_LEVEL_FRAGMENT = "levelFragment";
 
     // sound engine
     private AudioTrack mTrack;
@@ -72,33 +53,17 @@ public class MainActivity extends ActionBarActivity
     {
         super.onCreate(savedInstanceState);
         Global.initialize(this);
-        mDocument = Document.getInstance();
         setContentView(R.layout.activity_main);
         findViewById(android.R.id.content).setBackgroundColor(FLOOR_COLOUR);
 
         if(savedInstanceState != null)
         {
-            String value = savedInstanceState.getString(EXTRA_CURRENT_PATH);
-            if(value != null)
-                mCurrentPath = new File(value);
-            mLevelBundle = savedInstanceState.getBundle(EXTRA_FRAGMENT_LEVEL);
-            mStartBundle = savedInstanceState.getBundle(EXTRA_FRAGMENT_START);
-            establishCurrentFragment();
         }
         else
-            mStartFragment = (StartFragment)showFragment(StartFragment.class, mStartBundle);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState)
-    {
-        if(mCurrentPath != null)
-            outState.putString(EXTRA_CURRENT_PATH, mCurrentPath.getPath());
-        if(mStartBundle != null)
-            outState.putBundle(EXTRA_FRAGMENT_START, mStartBundle);
-        if(mLevelBundle != null)
-            outState.putBundle(EXTRA_FRAGMENT_LEVEL, mLevelBundle);
-        super.onSaveInstanceState(outState);
+        {
+            // TODO: get path from shared preferences
+            goToStartFragment();
+        }
     }
 
     @Override
@@ -110,45 +75,6 @@ public class MainActivity extends ActionBarActivity
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode,
-                                    Intent data)
-    {
-        super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == REQUEST_OPEN_WOLF && resultCode == RESULT_OK)
-        {
-            mCurrentPath = new File(data.getStringExtra(OpenActivity.EXTRA_CURRENT_PATH));
-
-            if(mDocumentLoadAsyncTask != null)
-                Global.showErrorAlert(this, "", "A document is currently opening.");
-            else
-            {
-                mDocumentLoadAsyncTask = new DocumentLoadAsyncTask();
-                mDocumentLoadAsyncTask.execute(mCurrentPath);
-            }
-        }
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
-        switch(item.getItemId())
-        {
-            case R.id.action_open:
-            {
-                Intent intent = new Intent(this, OpenActivity.class);
-                if(mCurrentPath != null)
-                    intent.putExtra(OpenActivity.EXTRA_CURRENT_PATH,
-                            mCurrentPath.getPath());
-                startActivityForResult(intent, REQUEST_OPEN_WOLF);
-                return true;
-            }
-            default:
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
     public void onDestroy()
     {
         super.onDestroy();
@@ -156,114 +82,28 @@ public class MainActivity extends ActionBarActivity
             mTrack.release();
     }
 
-    @Override
-    public void onBackPressed()
+    public void goToLevelFragment(Document document, File path)
     {
-        if(mCurrentFragment.handleBackButton())
-            return;
-        super.onBackPressed();
+        LevelFragment fragment = new LevelFragment();
+        fragment.setDocument(document); // unsaved data
+
+        Bundle args = new Bundle();
+        args.putString(LevelFragment.ARG_PATH_NAME, path.getPath());
+        fragment.setArguments(args);
+
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(android.R.id.content, fragment, TAG_LEVEL_FRAGMENT);
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        transaction.commit();
     }
 
-    private void  establishCurrentFragment()
+    public void goToStartFragment()
     {
-        SwitchableFragment curFragment = (SwitchableFragment)getSupportFragmentManager()
-                .findFragmentById(android.R.id.content);
-        if(curFragment != null)
-        {
-            mCurrentFragment = curFragment;
-            if(curFragment instanceof LevelFragment)
-                curFragment.setStateBundle(mLevelBundle);
-            else if(curFragment instanceof StartFragment) {
-                mStartFragment = (StartFragment)curFragment;
-                curFragment.setStateBundle(mStartBundle);
-            }
-        }
-    }
-
-    private Fragment showFragment(Class<? extends SwitchableFragment>
-                                          fragmentClass, Bundle state)
-    {
-        SwitchableFragment curFragment = (SwitchableFragment)getSupportFragmentManager()
-                .findFragmentById(android.R.id.content);
-        if(curFragment != null)
-        {
-            curFragment.saveSwitchState();
-        }
-
-        curFragment = (SwitchableFragment)Fragment.instantiate(this,
-                fragmentClass.getName(), state);
-        if(fragmentClass == LevelFragment.class)
-        {
-            if(mLevelBundle == null)
-                mLevelBundle = new Bundle();
-            curFragment.setStateBundle(mLevelBundle);
-        }
-        else if(fragmentClass == StartFragment.class)
-        {
-            if(mStartBundle == null)
-                mStartBundle = new Bundle();
-            curFragment.setStateBundle(mStartBundle);
-        }
-
-        getSupportFragmentManager().beginTransaction().replace(
-                android.R.id.content,
-                curFragment)
-                .commit();
-
-        return mCurrentFragment = curFragment;
-    }
-
-    /**
-     * Document load async task
-     * @author ioan
-     *
-     */
-    private class DocumentLoadAsyncTask extends AsyncTask<File, String, Boolean>
-    {
-
-        @Override
-        protected void onPreExecute()
-        {
-//            if(mStartFragment != null)
-//                mStartFragment.startProgress();
-            // TODO: disable access to all fragments while executing
-        }
-
-        @Override
-        protected Boolean doInBackground(File... params)
-        {
-            return mDocument.loadFromDirectory(params[0], new RunnableArg
-                    <String>()
-            {
-                @Override
-                public void run()
-                {
-                    publishProgress(mArgs);
-                }
-            });
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values)
-        {
-            mStartFragment.setProgressText(values[0]);
-        }
-
-        @Override
-        protected void onPostExecute(Boolean result)
-        {
-            mDocumentLoadAsyncTask = null;
-            mStartFragment.endProgress();
-            // TODO: allow access
-
-            if(result)
-            {
-                ((LevelFragment)showFragment(LevelFragment.class, mLevelBundle))
-                        .updateData();
-            }
-            else
-                Global.showErrorAlert(MainActivity.this,
-                        "", "Can't open document " + mCurrentPath);
-        }
+        // TODO: use path as argument
+        StartFragment fragment = new StartFragment();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(android.R.id.content, fragment, TAG_START_FRAGMENT);
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        transaction.commit();
     }
 }

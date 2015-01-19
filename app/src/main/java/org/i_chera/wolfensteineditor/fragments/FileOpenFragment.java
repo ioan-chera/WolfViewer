@@ -1,6 +1,7 @@
 package org.i_chera.wolfensteineditor.fragments;
 
 import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
@@ -10,11 +11,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.i_chera.wolfensteineditor.Global;
+import org.i_chera.wolfensteineditor.MainActivity;
 import org.i_chera.wolfensteineditor.R;
+import org.i_chera.wolfensteineditor.RunnableArg;
+import org.i_chera.wolfensteineditor.document.Document;
 
 import java.io.File;
 import java.util.Arrays;
@@ -35,6 +41,7 @@ public class FileOpenFragment extends Fragment
     private TextView mPathView;
     private ListView mListView;
     private ImageView mUpButton;
+    private Button mOpenButton;
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -90,6 +97,13 @@ public class FileOpenFragment extends Fragment
                 }
             }
         });
+        mOpenButton = (Button)v.findViewById(R.id.open_button);
+        mOpenButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                tryOpenCurrentPath();
+            }
+        });
 
         // Set derived data
         setFileList(mPath);
@@ -115,6 +129,57 @@ public class FileOpenFragment extends Fragment
                 adapter.notifyDataSetChanged();
         }
     }
+
+    private void tryOpenCurrentPath()
+    {
+        final File path = mPath;
+        AsyncTask<Void, String, Document> task = new AsyncTask<Void, String, Document>() {
+
+            @Override
+            protected void onPreExecute() {
+                // TODO: init progress
+            }
+
+            @Override
+            protected Document doInBackground(Void... params) {
+                Document document = new Document();
+                boolean result = document.loadFromDirectory(path, new RunnableArg<String>() {
+                    @Override
+                    public void run() {
+                        publishProgress(mArgs);
+                    }
+                });
+                return result ? document : null;
+            }
+
+            @Override
+            protected void onProgressUpdate(String... values) {
+                // TODO: display progress
+            }
+
+            @Override
+            protected void onPostExecute(Document document) {
+                // TODO: end progress
+                if(getActivity() == null) {
+                    Log.w("FileOpenFragment", "Async task finished after activity was destroyed");
+                    return;
+                }
+
+                if (document != null) {
+                    ((MainActivity) getActivity()).goToLevelFragment(document, path);
+                }
+                else
+                {
+                    Global.showErrorAlert(getActivity(), "Level Load Error", "Couldn't open data " +
+                            "from directory " + path.getPath());
+                }
+            }
+
+        };
+
+        task.execute();
+    }
+
 
     private class PathAdapter extends BaseAdapter
     {

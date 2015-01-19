@@ -27,9 +27,6 @@ import java.io.File;
  */
 public class Document
 {
-    // unique instance
-    private static Document	sInstance;
-
     // Wolf data
     private VSwapContainer	mVSwap;
     private LevelContainer	mLevels;
@@ -43,20 +40,9 @@ public class Document
     /**
      * Private constructor
      */
-    private Document()
+    public Document()
     {
 
-    }
-
-    /**
-     * Pointer to unique instance
-     * @return unique instance
-     */
-    public static Document getInstance()
-    {
-        if(sInstance == null)
-            sInstance = new Document();
-        return sInstance;
     }
 
     /**

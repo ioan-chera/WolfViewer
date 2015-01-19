@@ -34,7 +34,7 @@ import org.i_chera.wolfensteineditor.R;
 /**
  * Created by ioan_chera on 15.01.2015.
  */
-public class StartFragment extends SwitchableFragment {
+public class StartFragment extends Fragment {
 
     // Dynamic/automatic
     private ViewPager mPager;
@@ -63,17 +63,6 @@ public class StartFragment extends SwitchableFragment {
     {
 //        mProgressIndicator.setVisibility(View.GONE);
 //        mProgressInfoLabel.setVisibility(View.GONE);
-    }
-
-    @Override
-    protected void saveState(Bundle target)
-    {
-    }
-
-    @Override
-    public boolean handleBackButton()
-    {
-        return false;
     }
 
     private class StartAdapter extends FragmentPagerAdapter
