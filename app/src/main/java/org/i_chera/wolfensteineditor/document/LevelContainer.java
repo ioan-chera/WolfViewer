@@ -33,14 +33,11 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Stack;
 
-/**
- * Created by ioan_chera on 15.01.2015.
- */
 public class LevelContainer implements DefinedSizeObject{
     public static final int NUMMAPS = 60;
     public static final int MAPPLANES = 2;
     public static final int MAPSIZE = 64;
-    public static final int maparea = MAPSIZE * MAPSIZE;
+//    public static final int maparea = MAPSIZE * MAPSIZE;
 
     private static final int ARBITRARY_RUNNABLE_SIZE = 16;
 
@@ -160,10 +157,10 @@ public class LevelContainer implements DefinedSizeObject{
         return mLevels[level][plane][y * MAPSIZE + x];
     }
 
-    public short getTile(int level, int plane, int i)
-    {
-        return mLevels[level][plane][i];
-    }
+//    public short getTile(int level, int plane, int i)
+//    {
+//        return mLevels[level][plane][i];
+//    }
 
     public void undo(int level)
     {

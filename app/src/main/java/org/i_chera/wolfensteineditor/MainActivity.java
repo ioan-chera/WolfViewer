@@ -18,7 +18,6 @@ package org.i_chera.wolfensteineditor;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import android.media.AudioTrack;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -33,12 +32,12 @@ import java.io.File;
 
 public class MainActivity extends ActionBarActivity
 {
-    static final String TAG = "MainActivity";
+//    static final String TAG = "MainActivity";
     private static final String TAG_START_FRAGMENT = "startFragment";
     private static final String TAG_LEVEL_FRAGMENT = "levelFragment";
 
     // sound engine
-    private AudioTrack mTrack;
+//    private AudioTrack mTrack;
 
     // static
     public static final int FLOOR_COLOUR = Palette.WL6[25];
@@ -51,10 +50,7 @@ public class MainActivity extends ActionBarActivity
         setContentView(R.layout.activity_main);
         findViewById(android.R.id.content).setBackgroundColor(FLOOR_COLOUR);
 
-        if(savedInstanceState != null)
-        {
-        }
-        else
+        if(savedInstanceState == null)
         {
             // TODO: get path from shared preferences
             goToStartFragment();
@@ -73,8 +69,6 @@ public class MainActivity extends ActionBarActivity
     public void onDestroy()
     {
         super.onDestroy();
-        if(mTrack != null)
-            mTrack.release();
     }
 
     public void goToLevelFragment(Document document, File path)
