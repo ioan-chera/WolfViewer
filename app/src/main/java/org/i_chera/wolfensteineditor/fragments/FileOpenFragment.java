@@ -1,11 +1,9 @@
 package org.i_chera.wolfensteineditor.fragments;
 
 import android.graphics.Typeface;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,32 +14,28 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.i_chera.wolfensteineditor.Global;
 import org.i_chera.wolfensteineditor.MainActivity;
 import org.i_chera.wolfensteineditor.R;
-import org.i_chera.wolfensteineditor.RunnableArg;
 import org.i_chera.wolfensteineditor.document.Document;
+import org.i_chera.wolfensteineditor.fragments.tasks.DocumentLoadAsyncTask;
 
 import java.io.File;
 import java.util.Arrays;
 
-/**
- * Created by ioan_chera on 17.01.2015.
- */
 public class FileOpenFragment extends Fragment
 {
     // State
     private File mPath;
     private static final String KEY_Path = "Path";
 
-    // Derived
+    // Dynamic
     private File[] mFileList;
+    private DocumentLoadAsyncTask mTask;
 
     // controls
     private TextView mPathView;
     private ListView mListView;
     private ImageView mUpButton;
-    private Button mOpenButton;
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -69,7 +63,7 @@ public class FileOpenFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
 
-        View v = inflater.inflate(R.layout.fragment_file_open, null);
+        View v = inflater.inflate(R.layout.fragment_file_open, container, false);
 
         // Get views
         mPathView = (TextView)v.findViewById(R.id.pathView);
@@ -97,8 +91,8 @@ public class FileOpenFragment extends Fragment
                 }
             }
         });
-        mOpenButton = (Button)v.findViewById(R.id.open_button);
-        mOpenButton.setOnClickListener(new View.OnClickListener() {
+        Button openButton = (Button)v.findViewById(R.id.open_button);
+        openButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 tryOpenCurrentPath();
@@ -111,6 +105,13 @@ public class FileOpenFragment extends Fragment
         mListView.setAdapter(new PathAdapter());
 
         return v;
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        super.onDestroy();
+        tryCancelTask(true);
     }
 
     private void setFileList(File dir)
@@ -130,56 +131,47 @@ public class FileOpenFragment extends Fragment
         }
     }
 
-    private void tryOpenCurrentPath()
+    private void tryCancelTask(boolean destroy)
     {
-        final File path = mPath;
-        AsyncTask<Void, String, Document> task = new AsyncTask<Void, String, Document>() {
-
-            @Override
-            protected void onPreExecute() {
-                // TODO: init progress
-            }
-
-            @Override
-            protected Document doInBackground(Void... params) {
-                Document document = new Document();
-                boolean result = document.loadFromDirectory(path, new RunnableArg<String>() {
-                    @Override
-                    public void run() {
-                        publishProgress(mArgs);
-                    }
-                });
-                return result ? document : null;
-            }
-
-            @Override
-            protected void onProgressUpdate(String... values) {
-                // TODO: display progress
-            }
-
-            @Override
-            protected void onPostExecute(Document document) {
-                // TODO: end progress
-                if(getActivity() == null) {
-                    Log.w("FileOpenFragment", "Async task finished after activity was destroyed");
-                    return;
-                }
-
-                if (document != null) {
-                    ((MainActivity) getActivity()).goToLevelFragment(document, path);
-                }
-                else
-                {
-                    Global.showErrorAlert(getActivity(), "Level Load Error", "Couldn't open data " +
-                            "from directory " + path.getPath());
-                }
-            }
-
-        };
-
-        task.execute();
+        if(mTask != null && !mTask.isCancelled())
+        {
+            if(destroy)
+                mTask.destroy();
+            else
+                mTask.cancel(false);
+        }
     }
 
+    private void tryCancelTask()
+    {
+        tryCancelTask(false);
+    }
+
+    private void tryOpenCurrentPath()
+    {
+        tryCancelTask();
+        mTask = new DocumentLoadAsyncTask(this, mPath, new DocumentLoadAsyncTask.Listener() {
+            @Override
+            public void tryCancelDocumentTask() {
+                tryCancelTask();
+            }
+
+            @Override
+            public void removeDocumentTask() {
+                mTask = null;
+            }
+
+            @Override
+            public void onSuccessDocumentTask(Document document, File path) {
+                ((MainActivity) getActivity()).goToLevelFragment(document, mPath);
+            }
+
+            @Override
+            public void onFailureDocumentTask() {
+            }
+        });
+        mTask.execute();
+    }
 
     private class PathAdapter extends BaseAdapter
     {
@@ -215,4 +207,6 @@ public class FileOpenFragment extends Fragment
             return convertView;
         }
     }
+
+
 }

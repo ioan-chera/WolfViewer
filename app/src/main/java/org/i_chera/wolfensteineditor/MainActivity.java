@@ -18,20 +18,15 @@ package org.i_chera.wolfensteineditor;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import android.content.Intent;
 import android.media.AudioTrack;
-import android.os.AsyncTask;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.view.Menu;
-import android.view.MenuItem;
 
 import org.i_chera.wolfensteineditor.document.Document;
 import org.i_chera.wolfensteineditor.fragments.LevelFragment;
 import org.i_chera.wolfensteineditor.fragments.StartFragment;
-import org.i_chera.wolfensteineditor.fragments.SwitchableFragment;
 
 import java.io.File;
 
@@ -94,7 +89,7 @@ public class MainActivity extends ActionBarActivity
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(android.R.id.content, fragment, TAG_LEVEL_FRAGMENT);
         transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        transaction.commit();
+        transaction.commitAllowingStateLoss();
     }
 
     public void goToStartFragment()
@@ -104,6 +99,6 @@ public class MainActivity extends ActionBarActivity
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(android.R.id.content, fragment, TAG_START_FRAGMENT);
         transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        transaction.commit();
+        transaction.commitAllowingStateLoss();
     }
 }

@@ -18,13 +18,10 @@ package org.i_chera.wolfensteineditor.document;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.i_chera.wolfensteineditor.RunnableArg;
+import org.i_chera.wolfensteineditor.ProgressCallback;
 
 import java.io.File;
 
-/**
- * Created by ioan_chera on 14.01.2015.
- */
 public class Document
 {
     // Wolf data
@@ -47,7 +44,7 @@ public class Document
 
     /**
      * Returns true if the document was successfully loaded
-     * @return
+     *
      */
     public boolean isLoaded()
     {
@@ -60,14 +57,14 @@ public class Document
      * @param directory Directory containing Wolfenstein files
      * @return True on success
      */
-    public boolean loadFromDirectory(File directory, RunnableArg<String> progressUpdater)
+    public boolean loadFromDirectory(File directory, ProgressCallback progressUpdater)
     {
         if(!directory.isDirectory())
             return false;
 
         // First check if files exist
         if(progressUpdater != null)
-            progressUpdater.run("Checking for files...");
+            progressUpdater.onProgress(1, 4, "Checking for files...");
         File vSwapFile = new File(directory, "vswap.wl6");
         if(!vSwapFile.exists())
             return false;
@@ -80,14 +77,14 @@ public class Document
 
         // Try loading vswap container
         if(progressUpdater != null)
-            progressUpdater.run("Loading VSWAP file...");
+            progressUpdater.onProgress(2, 4, "Loading VSWAP file...");
         VSwapContainer vswap = new VSwapContainer();
         if(!vswap.loadFile(vSwapFile))
             return false;
 
         // Try loading level container
         if(progressUpdater != null)
-            progressUpdater.run("Loading MAPHEAD and GAMEMAPS files...");
+            progressUpdater.onProgress(3, 4, "Loading MAPHEAD and GAMEMAPS files...");
         LevelContainer levels = new LevelContainer();
         if(!levels.loadFile(mapHeadFile, gameMapsFile))
             return false;
@@ -101,7 +98,7 @@ public class Document
 
     /**
      * Gets reference to VSWap container
-     * @return
+     *
      */
     public VSwapContainer getVSwap()
     {

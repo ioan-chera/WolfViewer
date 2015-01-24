@@ -22,13 +22,12 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v4.app.ActionBarDrawerToggle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -55,9 +54,9 @@ import org.i_chera.wolfensteineditor.Global;
 import org.i_chera.wolfensteineditor.MainActivity;
 import org.i_chera.wolfensteineditor.Palette;
 import org.i_chera.wolfensteineditor.R;
-import org.i_chera.wolfensteineditor.RunnableArg;
 import org.i_chera.wolfensteineditor.document.Document;
 import org.i_chera.wolfensteineditor.document.LevelContainer;
+import org.i_chera.wolfensteineditor.fragments.tasks.DocumentLoadAsyncTask;
 import org.i_chera.wolfensteineditor.ui.HXScrollView;
 import org.i_chera.wolfensteineditor.ui.ScrollViewListener;
 import org.i_chera.wolfensteineditor.ui.VXScrollView;
@@ -70,9 +69,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Created by ioan_chera on 15.01.2015.
- */
 public class LevelFragment extends Fragment implements
         AdapterView.OnItemClickListener,
         LevelContainer.Observer,
@@ -97,6 +93,7 @@ public class LevelFragment extends Fragment implements
 
     // document
     private Document mDocument;
+    private DocumentLoadAsyncTask mTask;
 
     // widgets
     private RelativeLayout mGridLayout;
@@ -295,55 +292,29 @@ public class LevelFragment extends Fragment implements
         }
         else
         {
-            // TODO: finish both this and the FileOpenFragment one and put them in a common place
-            final File path = mPath;
-            final Document document = mDocument;
-            new AsyncTask<Void, String, Document>() {
-
+            tryCancelTask();
+            mTask = new DocumentLoadAsyncTask(this, mPath, new DocumentLoadAsyncTask.Listener() {
                 @Override
-                protected void onPreExecute() {
-                    // TODO: init progress
+                public void tryCancelDocumentTask() {
+                    tryCancelTask();
                 }
 
                 @Override
-                protected Document doInBackground(Void... params) {
-                    boolean result = document.loadFromDirectory(path, new RunnableArg<String>() {
-                        @Override
-                        public void run() {
-                            publishProgress(mArgs);
-                        }
-                    });
-                    return result ? document : null;
+                public void removeDocumentTask() {
+                    mTask = null;
                 }
 
                 @Override
-                protected void onProgressUpdate(String... values) {
-                    // TODO: display progress
+                public void onSuccessDocumentTask(Document document, File path) {
+                    ((MainActivity) getActivity()).goToLevelFragment(document, path);
                 }
 
                 @Override
-                protected void onPostExecute(Document document) {
-                    // TODO: end progress
-                    if(getActivity() == null) {
-                        Log.w("FileOpenFragment", "Async task finished after activity was destroyed");
-                        return;
-                    }
-
-                    mDocument = document;
-
-                    if (document != null) {
-                        // Just create a new fragment with the data ready.
-                        ((MainActivity) getActivity()).goToLevelFragment(document, path);
-                    }
-                    else
-                    {
-                        Global.showErrorAlert(getActivity(), "Level Load Error", "Couldn't open data " +
-                                "from directory " + path.getPath());
-                        ((MainActivity)getActivity()).goToStartFragment();
-                    }
+                public void onFailureDocumentTask() {
+                    ((MainActivity)getActivity()).goToStartFragment();
                 }
-
-            };
+            });
+            mTask.execute();
         }
     }
 
@@ -358,11 +329,28 @@ public class LevelFragment extends Fragment implements
         }
     }
 
+    private void tryCancelTask(boolean destroy)
+    {
+        if(mTask != null && !mTask.isCancelled())
+        {
+            if(destroy)
+                mTask.destroy();
+            else
+                mTask.cancel(false);
+        }
+    }
+
+    private void tryCancelTask()
+    {
+        tryCancelTask(false);
+    }
+
     @Override
     public void onDestroy()
     {
         super.onDestroy();
         mGridLayout.removeAllViews();
+        tryCancelTask(true);
     }
 
     public void updateData()
