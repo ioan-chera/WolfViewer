@@ -1,8 +1,7 @@
 package org.i_chera.wolfensteineditor;
 
-/**
- * Created by ioan_chera on 15.01.2015.
- */
+import java.util.ArrayList;
+
 public class Compression {
     private static final int NEARTAG = 0xa7;
     private static final int FARTAG = 0xa8;
@@ -122,5 +121,67 @@ public class Compression {
         }while(outIndex < dest.length);
 
         return dest;
+    }
+
+    //
+    // Compression
+    //
+
+    public static byte[] rlewCompressShortToByte(short[] source, short rlewTag)
+    {
+        ArrayList<Byte> destList = new ArrayList<>(source.length * 2);
+
+        int compLength;
+        short value, count, i;
+
+        int sourceIndex = 0;
+
+        do
+        {
+            count = 1;
+            value = source[sourceIndex++];
+            while(source[sourceIndex] == value && sourceIndex < source.length)
+            {
+                ++count;
+                ++sourceIndex;
+            }
+            if(count > 3 || value == rlewTag)
+            {
+                destList.add((byte)(rlewTag & 0xff));
+                destList.add((byte)((rlewTag >>> 8) & 0xff));
+                destList.add((byte)(count & 0xff));
+                destList.add((byte)((count >>> 8) & 0xff));
+                destList.add((byte)(value & 0xff));
+                destList.add((byte)((value >>> 8) & 0xff));
+            }
+            else
+            {
+                for(i = 1; i <= count; ++i)
+                {
+                    destList.add((byte)(value & 0xff));
+                    destList.add((byte)((value >>> 8) & 0xff));
+                }
+            }
+        }while(sourceIndex < source.length);
+
+        byte[] ret = new byte[destList.size()];
+        i = 0;
+        for(byte b : destList)
+        {
+            ret[i++] = b;
+        }
+        return ret;
+    }
+
+    byte[] carmackCompress(byte[] source)
+    {
+        int instart, inptr;
+        int outptr;
+        int outlength;
+
+        instart = inptr = 0;
+        outptr = 0;
+        outlength = 0;
+        
     }
 }
