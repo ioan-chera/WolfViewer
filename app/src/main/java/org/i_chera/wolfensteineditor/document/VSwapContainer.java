@@ -20,7 +20,9 @@ package org.i_chera.wolfensteineditor.document;
 
 import android.graphics.Bitmap;
 import android.support.v4.util.LruCache;
+import android.util.Log;
 
+import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.FileUtil;
 import org.i_chera.wolfensteineditor.Palette;
 
@@ -30,17 +32,52 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
-/**
- * Created by ioan_chera on 15.01.2015.
- */
-public class VSwapContainer {
-    private int							mNumChunks;
-    private int							mSpriteStart;
-    private int							mSoundStart;
+public class VSwapContainer implements DefinedSizeObject{
+//    private int							mNumChunks;
+    private int mSpriteStart;
+    private int mSoundStart;
     private ArrayList<byte[]> mPages;
 
     private LruCache<Integer, Bitmap> mWallBitmapCache;
-    private LruCache<Integer, Bitmap>	mSpriteBitmapCache;
+    private LruCache<Integer, Bitmap> mSpriteBitmapCache;
+
+    @Override
+    public int getSizeInBytes()
+    {
+        int size = 0;
+        if(mPages != null)
+        {
+            for(byte[] page : mPages)
+            {
+                size += page.length;
+            }
+        }
+
+        Log.i("VSwapContainer", "Pages size: " + size);
+
+        size += getLruCacheSize(mWallBitmapCache);
+        Log.i("VSwapContainer", "Pages+wall size: " + size);
+
+        size += getLruCacheSize(mSpriteBitmapCache);
+
+        Log.i("VSwapContainer", "Size: " + size);
+
+        return size;
+    }
+
+    private int getLruCacheSize(LruCache<Integer, Bitmap> cache)
+    {
+        int size = 0;
+        if(cache != null)
+        {
+            for(Bitmap bitmap : cache.snapshot().values())
+            {
+                if(bitmap != null)
+                    size += bitmap.getWidth() * bitmap.getHeight() * 4;
+            }
+        }
+        return size;
+    }
 
     /**
      * Gets a bitmap from a given wall texture
@@ -57,7 +94,7 @@ public class VSwapContainer {
 
         if(mWallBitmapCache == null)
         {
-            mWallBitmapCache = new LruCache<Integer, Bitmap>(mSpriteStart);
+            mWallBitmapCache = new LruCache<>(mSpriteStart);
         }
 
         Bitmap bmp = mWallBitmapCache.get(n);
@@ -85,7 +122,7 @@ public class VSwapContainer {
 
         if(mSpriteBitmapCache == null)
         {
-            mSpriteBitmapCache = new LruCache<Integer, Bitmap>(mSoundStart - mSpriteStart);
+            mSpriteBitmapCache = new LruCache<>(mSoundStart - mSpriteStart);
         }
 
         Bitmap bmp = mSpriteBitmapCache.get(n);
@@ -136,14 +173,14 @@ public class VSwapContainer {
      * Number of chunks
      * @return Total number of chunks
      */
-    public int getNumChunks()
-    {
-        return mNumChunks;
-    }
+//    public int getNumChunks()
+//    {
+//        return mNumChunks;
+//    }
 
     /**
-     * Index of first sprite
-     * @return
+     *
+     * @return Index of first sprite
      */
     public int getSpriteStart()
     {
@@ -151,23 +188,23 @@ public class VSwapContainer {
     }
 
     /**
-     * Index of first sound chunk
-     * @return
+     *
+     * @return Index of first sound chunk
      */
-    public int getSoundStart()
-    {
-        return mSoundStart;
-    }
+//    public int getSoundStart()
+//    {
+//        return mSoundStart;
+//    }
 
     /**
      * Raw data of given chunk
      * @param n Index of chunk
      * @return a byte array
      */
-    public byte[] getPage(int n)
-    {
-        return mPages.get(n);
-    }
+//    public byte[] getPage(int n)
+//    {
+//        return mPages.get(n);
+//    }
 
     /**
      * Loads data from a file. Only finishes it on success
@@ -197,7 +234,7 @@ public class VSwapContainer {
 
             pageOffsets[newNumChunks] = (int)file.length();
 
-            ArrayList<byte[]> newPages = new ArrayList<byte[]>();
+            ArrayList<byte[]> newPages = new ArrayList<>();
 
             byte[] reading;
             for(int i = 0; i < newNumChunks; ++i)
@@ -221,7 +258,7 @@ public class VSwapContainer {
             }
 
             // okay
-            mNumChunks = newNumChunks;
+//            mNumChunks = newNumChunks;
             mSpriteStart = newSpriteStart;
             mSoundStart = newSoundStart;
             mPages = newPages;

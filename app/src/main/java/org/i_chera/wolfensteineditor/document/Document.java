@@ -18,11 +18,12 @@ package org.i_chera.wolfensteineditor.document;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.ProgressCallback;
 
 import java.io.File;
 
-public class Document
+public class Document implements DefinedSizeObject
 {
     // Wolf data
     private VSwapContainer	mVSwap;
@@ -41,6 +42,20 @@ public class Document
     {
 
     }
+
+    @Override
+    public int getSizeInBytes()
+    {
+        int size = 0;
+        if(mVSwap != null)
+            size += mVSwap.getSizeInBytes();
+        if(mLevels != null)
+            size += mLevels.getSizeInBytes();
+        if(mDirectory != null)
+            size += mDirectory.getPath().length();
+        return size;
+    }
+
 
     /**
      * Returns true if the document was successfully loaded

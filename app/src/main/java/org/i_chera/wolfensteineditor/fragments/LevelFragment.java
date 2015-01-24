@@ -54,6 +54,7 @@ import org.i_chera.wolfensteineditor.Global;
 import org.i_chera.wolfensteineditor.MainActivity;
 import org.i_chera.wolfensteineditor.Palette;
 import org.i_chera.wolfensteineditor.R;
+import org.i_chera.wolfensteineditor.StateSaver;
 import org.i_chera.wolfensteineditor.document.Document;
 import org.i_chera.wolfensteineditor.document.LevelContainer;
 import org.i_chera.wolfensteineditor.fragments.tasks.DocumentLoadAsyncTask;
@@ -133,6 +134,10 @@ public class LevelFragment extends Fragment implements
         if(getArguments() != null)
         {
             mPath = new File(getArguments().getString(ARG_PATH_NAME));
+            if(mDocument == null)
+            {
+                mDocument = StateSaver.withdrawDocument(mPath);
+            }
         }
 
         mTileSize = (int)(48 * Global.getScale());
@@ -274,6 +279,9 @@ public class LevelFragment extends Fragment implements
         target.putInt(EXTRA_SCROLL_Y, mVerticalScroll.getScrollY());
         target.putInt(EXTRA_CURRENT_WALL_CHOICE, mCurrentWallChoice);
         target.putBoolean(EXTRA_SCROLL_LOCK, mScrollLockCheck.isChecked());
+        if(mDocument != null) {
+            StateSaver.putDocument(mPath, mDocument);
+        }
         super.onSaveInstanceState(target);
     }
 

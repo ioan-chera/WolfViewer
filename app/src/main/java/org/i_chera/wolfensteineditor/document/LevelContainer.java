@@ -18,7 +18,10 @@ package org.i_chera.wolfensteineditor.document;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import android.util.Log;
+
 import org.i_chera.wolfensteineditor.Compression;
+import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.FileUtil;
 
 import java.io.File;
@@ -33,11 +36,13 @@ import java.util.Stack;
 /**
  * Created by ioan_chera on 15.01.2015.
  */
-public class LevelContainer {
+public class LevelContainer implements DefinedSizeObject{
     public static final int NUMMAPS = 60;
     public static final int MAPPLANES = 2;
     public static final int MAPSIZE = 64;
     public static final int maparea = MAPSIZE * MAPSIZE;
+
+    private static final int ARBITRARY_RUNNABLE_SIZE = 16;
 
     private short[][][] mLevels;
     private String[] mLevelNames;
@@ -52,6 +57,48 @@ public class LevelContainer {
     {
         void observeLocalChange(int level, int plane, int i, short value);
     }
+
+    @Override
+    public int getSizeInBytes()
+    {
+        int size = 0;
+        if(mLevels != null) {
+            for (short[][] level : mLevels) {
+                if (level != null) {
+                    for (short[] layer : level) {
+                        if (layer != null)
+                            size += 2 * layer.length;
+                    }
+                }
+            }
+        }
+
+        if(mLevelNames != null) {
+            for (String levelName : mLevelNames) {
+                size += levelName.length();
+            }
+        }
+
+        // It may be different than stated, but approximation is okay
+        size += calculateRunnableStacksSize(mUndoStacks);
+        size += calculateRunnableStacksSize(mRedoStacks);
+
+        return size;
+    }
+
+    private int calculateRunnableStacksSize(ArrayList<Stack<Runnable>> stacks)
+    {
+        int size = 0;
+        if(stacks != null) {
+            for (Stack<Runnable> stack : stacks) {
+                if (stack != null) {
+                    size += ARBITRARY_RUNNABLE_SIZE * stack.size();
+                }
+            }
+        }
+        return size;
+    }
+
 
     private void notifyObserversLocalChange(int level, int plane, int i, short value)
     {
@@ -69,8 +116,9 @@ public class LevelContainer {
     public void addObserver(Observer who)
     {
         if(mObservers == null)
-            mObservers = new ArrayList<WeakReference<Observer>>();
-        mObservers.add(new WeakReference<LevelContainer.Observer>(who));
+            mObservers = new ArrayList<>();
+        mObservers.add(new WeakReference<>(who));
+        Log.i("LevelContainer", "Observers: " + mObservers.size());
     }
 
     public void removeObserver(Observer who)
