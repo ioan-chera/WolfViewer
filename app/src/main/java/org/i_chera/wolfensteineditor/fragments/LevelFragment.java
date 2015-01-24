@@ -22,7 +22,7 @@ import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -45,7 +45,6 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 
@@ -102,7 +101,6 @@ public class LevelFragment extends Fragment implements
     private VXScrollView mVerticalScroll;
     private HXScrollView mHorizontalScroll;
     private ListView mWallList;
-    private LinearLayout mLeftDrawer;
     private CheckBox mScrollLockCheck;
     private RelativeLayout mCentralContent;
     private ActionBarDrawerToggle mDrawerToggle;
@@ -117,14 +115,12 @@ public class LevelFragment extends Fragment implements
 
     // other data
     private JSONArray mWallChoices;
-    private boolean mDeferAddObserver;
 
     // Item click control
     private boolean mPressDown;
 
     // Drawer
     private DrawerLayout mDrawerLayout;
-    private boolean mDoNotPropagateScroll;
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -189,7 +185,6 @@ public class LevelFragment extends Fragment implements
         mVerticalScroll = (VXScrollView)v.findViewById(R.id.vertical_scroll);
         mHorizontalScroll = (HXScrollView)v.findViewById(R.id.horizontal_scroll);
         mWallList = (ListView)v.findViewById(R.id.wall_list);
-        mLeftDrawer = (LinearLayout)v.findViewById(R.id.left_drawer);
         mScrollLockCheck = (CheckBox)v.findViewById(R.id.scroll_lock_check);
         mCentralContent = (RelativeLayout)v.findViewById(R.id.central_content);
         mUndoButton = (ImageView)v.findViewById(R.id.button_undo);
@@ -250,7 +245,7 @@ public class LevelFragment extends Fragment implements
     {
         super.onActivityCreated(savedInstanceState);
         mDrawerToggle = new ActionBarDrawerToggle(getActivity(), mDrawerLayout,
-                R.drawable.ic_drawer, R.string.contentdesc_open_level_drawer,
+                R.string.contentdesc_open_level_drawer,
                 R.string.contentdesc_close_level_drawer);
         mDrawerLayout.setDrawerListener(mDrawerToggle);
         ((ActionBarActivity)getActivity()).getSupportActionBar()
@@ -437,7 +432,7 @@ public class LevelFragment extends Fragment implements
             // We also need to avoid interfering with the left drawer
             // Cancel DOWN if too left. But don't cancel MOVE if too left
             if(v == mCentralContent
-                    && !mDrawerLayout.isDrawerVisible(Gravity.LEFT))
+                    && !mDrawerLayout.isDrawerVisible(Gravity.START))
             {
                 int count = MotionEventCompat.getPointerCount(event);
                 for(int k = 0; k < count; ++k)
@@ -457,9 +452,7 @@ public class LevelFragment extends Fragment implements
         {
             // LOL trickery needed to scroll the below horiz view while this is
             // getting operated on
-            if(mVerticalScroll.isScrollable()
-                    && mDoNotPropagateScroll == false
-                    )
+            if(mVerticalScroll.isScrollable())
             {
                 mHorizontalScroll.setScrollingEnabled(true);
                 mHorizontalScroll.dispatchTouchEvent(event);
@@ -775,7 +768,7 @@ public class LevelFragment extends Fragment implements
             }
         }
         String jsonString = sb.toString();
-        JSONArray array = null;
+        JSONArray array;
         try
         {
             array = new JSONArray(jsonString);
@@ -786,11 +779,8 @@ public class LevelFragment extends Fragment implements
             ((MainActivity)getActivity()).showErrorAlert("Internal error", "Failed to read the wall choice list!");
             return;
         }
-        if(array != null)
-        {
-            mWallChoices = array;
-            Global.boundValue(mCurrentWallChoice, 0, mWallChoices.length() - 1);
-        }
+        mWallChoices = array;
+        Global.boundValue(mCurrentWallChoice, 0, mWallChoices.length() - 1);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -882,13 +872,19 @@ public class LevelFragment extends Fragment implements
     @Override
     public boolean handleBackButton()
     {
+        if(mDrawerLayout.isDrawerOpen(Gravity.START))
+        {
+            mDrawerLayout.closeDrawers();
+            return true;
+        }
+
         if(undo())
             return true;
 
         // Nothing to undo
         final MainActivity activity = (MainActivity)getActivity();
-        activity.showConfirmAlert("Close", "Close this document?", "Close",
-                "Don't Close", new Runnable()
+        activity.showConfirmAlert(getString(R.string.close), getString(R.string.close_document_question),
+                getString(R.string.close), getString(R.string.do_not_close), new Runnable()
         {
             @Override
             public void run()
