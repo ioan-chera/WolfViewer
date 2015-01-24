@@ -6,5 +6,8 @@
     
     <dimen name="button_touchable">48dp</dimen>
     <dimen name="standard_space">20dp</dimen>
+    <dimen name="drawer_menu_width">128dp</dimen>
 
+    <dimen name="drawer_menu_item_padding">8dp</dimen>
+    <dimen name="drawer_menu_item_drawable_padding">8dp</dimen>
 </resources>

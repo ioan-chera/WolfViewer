@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:padding="@dimen/drawer_menu_item_padding"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/button_touchable"
+    android:gravity="center_vertical"
+    android:textSize="17sp"
+    android:drawablePadding="@dimen/drawer_menu_item_drawable_padding"
+    android:textColor="@android:color/white"/>

@@ -30,6 +30,8 @@
 
     <string name="yes">Yes</string>
 
+    <string name="icon">Icon</string>
+
     <string name="exit">Exit</string>
     <string name="do_not_exit">Don\'t Exit</string>
     <string name="exit_question">Exit the Wolfenstein Editor?</string>

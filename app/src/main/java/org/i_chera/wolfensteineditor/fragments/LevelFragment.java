@@ -82,11 +82,12 @@ public class LevelFragment extends Fragment implements
     static final String TAG = "LevelFragment";
 
     // State
-    private static final String EXTRA_CURRENT_LEVEL = "currentLevel";
-    private static final String EXTRA_SCROLL_X = "scrollX";
-    private static final String EXTRA_SCROLL_Y = "scrollY";
-    private static final String EXTRA_SCROLL_LOCK = "scrollLock";
-    private static final String EXTRA_CURRENT_WALL_CHOICE = "currentWallChoice";
+    private static final String STATE_CURRENT_LEVEL = "currentLevel";
+    private static final String STATE_SCROLL_X = "scrollX";
+    private static final String STATE_SCROLL_Y = "scrollY";
+    private static final String STATE_SCROLL_LOCK = "scrollLock";
+    private static final String STATE_CURRENT_WALL_CHOICE = "currentWallChoice";
+    private static final String STATE_DRAWER_OPEN = "drawerOpen";
     public static final String ARG_PATH_NAME = "pathName";
     private int mCurrentLevel;
     private int mCurrentWallChoice;
@@ -128,7 +129,7 @@ public class LevelFragment extends Fragment implements
         super.onCreate(savedInstanceState);
         if(savedInstanceState != null)
         {
-            mCurrentLevel = savedInstanceState.getInt(EXTRA_CURRENT_LEVEL);
+            mCurrentLevel = savedInstanceState.getInt(STATE_CURRENT_LEVEL);
         }
         if(getArguments() != null)
         {
@@ -227,11 +228,13 @@ public class LevelFragment extends Fragment implements
                         mVerticalScroll.getMeasuredHeight());
                 if(savedInstanceState != null)
                 {
-                    mHorizontalScroll.scrollTo(savedInstanceState.getInt(EXTRA_SCROLL_X), 0);
-                    mVerticalScroll.scrollTo(0, savedInstanceState.getInt(EXTRA_SCROLL_Y));
-                    mCurrentWallChoice = savedInstanceState.getInt(EXTRA_CURRENT_WALL_CHOICE);
-                    boolean checked = savedInstanceState.getBoolean(EXTRA_SCROLL_LOCK);
+                    mHorizontalScroll.scrollTo(savedInstanceState.getInt(STATE_SCROLL_X), 0);
+                    mVerticalScroll.scrollTo(0, savedInstanceState.getInt(STATE_SCROLL_Y));
+                    mCurrentWallChoice = savedInstanceState.getInt(STATE_CURRENT_WALL_CHOICE);
+                    boolean checked = savedInstanceState.getBoolean(STATE_SCROLL_LOCK);
                     mScrollLockCheck.setChecked(checked);
+                    if(savedInstanceState.getBoolean(STATE_DRAWER_OPEN))
+                        mDrawerLayout.openDrawer(Gravity.START);
                 }
                 updateData();
             }
@@ -271,11 +274,12 @@ public class LevelFragment extends Fragment implements
     @Override
     public void onSaveInstanceState(Bundle target)
     {
-        target.putInt(EXTRA_CURRENT_LEVEL, mCurrentLevel);
-        target.putInt(EXTRA_SCROLL_X, mHorizontalScroll.getScrollX());
-        target.putInt(EXTRA_SCROLL_Y, mVerticalScroll.getScrollY());
-        target.putInt(EXTRA_CURRENT_WALL_CHOICE, mCurrentWallChoice);
-        target.putBoolean(EXTRA_SCROLL_LOCK, mScrollLockCheck.isChecked());
+        target.putInt(STATE_CURRENT_LEVEL, mCurrentLevel);
+        target.putInt(STATE_SCROLL_X, mHorizontalScroll.getScrollX());
+        target.putInt(STATE_SCROLL_Y, mVerticalScroll.getScrollY());
+        target.putInt(STATE_CURRENT_WALL_CHOICE, mCurrentWallChoice);
+        target.putBoolean(STATE_SCROLL_LOCK, mScrollLockCheck.isChecked());
+        target.putBoolean(STATE_DRAWER_OPEN, mDrawerLayout.isDrawerOpen(Gravity.START));
         if(mDocument != null) {
             StateSaver.putDocument(mPath, mDocument);
         }
