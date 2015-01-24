@@ -49,6 +49,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 
+import org.i_chera.wolfensteineditor.BackButtonHandler;
 import org.i_chera.wolfensteineditor.Global;
 import org.i_chera.wolfensteineditor.MainActivity;
 import org.i_chera.wolfensteineditor.Palette;
@@ -71,12 +72,13 @@ import java.io.InputStream;
 
 public class LevelFragment extends Fragment implements
         AdapterView.OnItemClickListener,
-        LevelContainer.Observer,
+        BackButtonHandler,
         CompoundButton.OnCheckedChangeListener,
+        LevelContainer.Observer,
+        ScrollViewListener,
         View.OnClickListener,
         View.OnTouchListener,
-        VisibilityGrid.Delegate,
-        ScrollViewListener
+        VisibilityGrid.Delegate
 {
     static final String TAG = "LevelFragment";
 
@@ -875,6 +877,7 @@ public class LevelFragment extends Fragment implements
         return false;
     }
 
+    @Override
     public boolean handleBackButton()
     {
         return undo();

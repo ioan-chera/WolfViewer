@@ -18,9 +18,11 @@ package org.i_chera.wolfensteineditor;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
 import android.view.Menu;
 
 import org.i_chera.wolfensteineditor.document.Document;
@@ -70,6 +72,16 @@ public class MainActivity extends ActionBarActivity
         super.onDestroy();
     }
 
+    private void setToFragment(Fragment fragment, String name)
+    {
+        getSupportFragmentManager().popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(android.R.id.content, fragment, name);
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        transaction.addToBackStack(TAG_LEVEL_FRAGMENT);
+        transaction.commitAllowingStateLoss();
+    }
+
     public void goToLevelFragment(Document document, File path)
     {
         LevelFragment fragment = new LevelFragment();
@@ -79,19 +91,33 @@ public class MainActivity extends ActionBarActivity
         args.putString(LevelFragment.ARG_PATH_NAME, path.getPath());
         fragment.setArguments(args);
 
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(android.R.id.content, fragment, TAG_LEVEL_FRAGMENT);
-        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        transaction.commitAllowingStateLoss();
+        setToFragment(fragment, TAG_LEVEL_FRAGMENT);
     }
 
     public void goToStartFragment()
     {
         // TODO: use path as argument
         StartFragment fragment = new StartFragment();
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(android.R.id.content, fragment, TAG_START_FRAGMENT);
-        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        transaction.commitAllowingStateLoss();
+
+        setToFragment(fragment, TAG_START_FRAGMENT);
     }
+
+    @Override
+    public void onBackPressed()
+    {
+        int fragmentCount = getSupportFragmentManager().getBackStackEntryCount();
+        if(fragmentCount > 0)
+        {
+            String topFragmentName = getSupportFragmentManager().getBackStackEntryAt(fragmentCount - 1).getName();
+            Fragment topFragment = getSupportFragmentManager().findFragmentByTag(topFragmentName);
+            if(topFragment instanceof BackButtonHandler
+                    && ((BackButtonHandler) topFragment).handleBackButton())
+            {
+                return;
+            }
+        }
+
+        // TODO: alert for exit
+    }
+
 }
