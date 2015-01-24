@@ -143,10 +143,7 @@ public class LevelFragment extends Fragment implements
             }
         }
 
-        mTileSize = (int)(48 * Global.getScale());
         setHasOptionsMenu(true);
-
-        readWallChoices();
     }
 
     @Override
@@ -183,6 +180,10 @@ public class LevelFragment extends Fragment implements
     {
         View v = inflater.inflate(R.layout.fragment_level, container, false);
         mDrawerLayout = (DrawerLayout)v;
+
+        // Static data
+        mTileSize = (int)(48 * ((MainActivity)getActivity()).getPixelScale());
+        readWallChoices();
 
         mGridLayout = (RelativeLayout)v.findViewById(R.id.grid_layout);
         mVerticalScroll = (VXScrollView)v.findViewById(R.id.vertical_scroll);
@@ -713,12 +714,14 @@ public class LevelFragment extends Fragment implements
             ImageView item;
             if(convertView == null)
             {
+                MainActivity activity = (MainActivity)getActivity();
                 item = new ImageView(getActivity());
                 AbsListView.LayoutParams alvlp = new AbsListView.LayoutParams(
-                        (int)(48 * Global.getScale()),
-                        (int)(48 * Global.getScale()));
+                        (int)(48 * activity.getPixelScale()),
+                        (int)(48 * activity.getPixelScale()));
                 item.setLayoutParams(alvlp);
-                item.setPadding(0, (int)(5 * Global.getScale()), 0, (int)(5 * Global.getScale()));
+                item.setPadding(0, (int)(5 * activity.getPixelScale()),
+                        0, (int)(5 * activity.getPixelScale()));
             }
             else
                 item = (ImageView)convertView;
@@ -780,8 +783,7 @@ public class LevelFragment extends Fragment implements
         catch(JSONException e)
         {
             e.printStackTrace();
-            Global.showErrorAlert(getActivity(), "Internal error",
-                    "Failed to read the wall choice list!");
+            ((MainActivity)getActivity()).showErrorAlert("Internal error", "Failed to read the wall choice list!");
             return;
         }
         if(array != null)
@@ -880,8 +882,21 @@ public class LevelFragment extends Fragment implements
     @Override
     public boolean handleBackButton()
     {
-        return undo();
+        if(undo())
+            return true;
+
+        // Nothing to undo
+        final MainActivity activity = (MainActivity)getActivity();
+        activity.showConfirmAlert("Close", "Close this document?", "Close",
+                "Don't Close", new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                activity.popFragment();
+            }
+        });
+
+        return true;
     }
-
-
 }

@@ -18,6 +18,8 @@ package org.i_chera.wolfensteineditor;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -41,14 +43,13 @@ public class MainActivity extends ActionBarActivity
     // sound engine
 //    private AudioTrack mTrack;
 
-    // static
-    public static final int FLOOR_COLOUR = Palette.WL6[25];
+    private float mPixelScale;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        Global.initialize(this);
+        initializeStaticData();
         setContentView(R.layout.activity_main);
 
         if(savedInstanceState == null)
@@ -56,6 +57,16 @@ public class MainActivity extends ActionBarActivity
             // TODO: get path from shared preferences
             goToStartFragment();
         }
+    }
+
+    private void initializeStaticData()
+    {
+        mPixelScale = getResources().getDisplayMetrics().density;
+    }
+
+    public float getPixelScale()
+    {
+        return mPixelScale;
     }
 
     @Override
@@ -75,15 +86,45 @@ public class MainActivity extends ActionBarActivity
     private void setToFragment(Fragment fragment, String name)
     {
         getSupportFragmentManager().popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        pushFragment(fragment, name);
+    }
+
+    private void pushFragment(Fragment fragment, String name)
+    {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(android.R.id.content, fragment, name);
         transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        transaction.addToBackStack(TAG_LEVEL_FRAGMENT);
+        transaction.addToBackStack(name);
         transaction.commitAllowingStateLoss();
+    }
+
+    public void popFragment()
+    {
+        if(getSupportFragmentManager().getBackStackEntryCount() >= 2)
+            getSupportFragmentManager().popBackStack();
+        else
+            finish();   // don't remove all fragments. Just quit.
+    }
+
+    private Fragment getTopFragment()
+    {
+        int fragmentCount = getSupportFragmentManager().getBackStackEntryCount();
+        if(fragmentCount > 0)
+        {
+            String topFragmentName = getSupportFragmentManager().getBackStackEntryAt(fragmentCount - 1).getName();
+            return getSupportFragmentManager().findFragmentByTag(topFragmentName);
+        }
+        return null;
     }
 
     public void goToLevelFragment(Document document, File path)
     {
+        // Need to pop whatever is now set
+        getSupportFragmentManager().popBackStackImmediate(TAG_START_FRAGMENT, 0);
+        if(!(getTopFragment() instanceof StartFragment))
+            throw new IllegalStateException("LevelFragment can only be pushed over a StartFragment; found "
+                    + getTopFragment().getClass().getName());
+
         LevelFragment fragment = new LevelFragment();
         fragment.setDocument(document); // set it, so it doesn't have to set it again when loaded
 
@@ -91,7 +132,7 @@ public class MainActivity extends ActionBarActivity
         args.putString(LevelFragment.ARG_PATH_NAME, path.getPath());
         fragment.setArguments(args);
 
-        setToFragment(fragment, TAG_LEVEL_FRAGMENT);
+        pushFragment(fragment, TAG_LEVEL_FRAGMENT);
     }
 
     public void goToStartFragment()
@@ -105,19 +146,41 @@ public class MainActivity extends ActionBarActivity
     @Override
     public void onBackPressed()
     {
-        int fragmentCount = getSupportFragmentManager().getBackStackEntryCount();
-        if(fragmentCount > 0)
+        Fragment fragment = getTopFragment();
+        if(fragment instanceof BackButtonHandler && ((BackButtonHandler) fragment).handleBackButton())
         {
-            String topFragmentName = getSupportFragmentManager().getBackStackEntryAt(fragmentCount - 1).getName();
-            Fragment topFragment = getSupportFragmentManager().findFragmentByTag(topFragmentName);
-            if(topFragment instanceof BackButtonHandler
-                    && ((BackButtonHandler) topFragment).handleBackButton())
-            {
-                return;
-            }
+            return;
         }
 
-        // TODO: alert for exit
+        showConfirmAlert(getString(R.string.exit), getString(R.string.exit_question),
+                getString(R.string.exit), getString(R.string.do_not_exit), new Runnable()
+        {
+
+            @Override
+            public void run()
+            {
+                finish();
+            }
+        });
     }
 
+    public void showErrorAlert(String title, String message)
+    {
+        new AlertDialog.Builder(this).setTitle(title)
+                .setMessage(message).setNeutralButton(getString(R.string.dismiss), null).show();
+    }
+
+    public void showConfirmAlert(String title, String message, String yesText, String noText, final Runnable yesAction)
+    {
+        assert yesAction != null;
+        new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNegativeButton(noText, null)
+                .setPositiveButton(yesText, new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which)
+                    {
+                        yesAction.run();
+                    }
+                }).show();
+    }
 }

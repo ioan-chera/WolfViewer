@@ -18,18 +18,10 @@ package org.i_chera.wolfensteineditor;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Context;
-import android.util.Log;
 import android.util.SparseIntArray;
 
-/**
- * Created by ioan_chera on 14.01.2015.
- */
 public class Global
 {
-    private static final String TAG = "Global";
     private static final String[] sWolfFileNames =
             {
                     "AUDIOHED.WL6",
@@ -42,11 +34,7 @@ public class Global
                     "VSWAP.WL6",
             };
 
-    public static final int	SOUND_SAMPLE_RATE_HZ = 6896;
-
-    private static float 	sScale;
-
-    private static boolean 	sInitialized;
+//    public static final int	SOUND_SAMPLE_RATE_HZ = 6896;
 
     private static SparseIntArray sActorSpriteMap;
 
@@ -149,20 +137,6 @@ public class Global
         sActorSpriteMap.put(227, 294);
     }
 
-    /**
-     * Initializes the global variables. May have to be called when activity is
-     * reborn
-     * @param context the relevant context
-     */
-    public static void initialize(Activity context)
-    {
-        if(sInitialized)
-            return;
-        Log.i(TAG, "Initializing...");
-        sInitialized = true;
-
-        sScale = context.getResources().getDisplayMetrics().density;
-    }
 
     /**
      * A static list of valid Wolfenstein data file names, as strings
@@ -180,27 +154,6 @@ public class Global
     public static SparseIntArray getActorSpriteMap()
     {
         return sActorSpriteMap;
-    }
-
-    /**
-     * Screen pixel scale
-     * @return
-     */
-    public static float getScale()
-    {
-        return sScale;
-    }
-
-    /**
-     * Shows an alert view with the OK button
-     * @param context An activity or application-given context
-     * @param title Dialog title
-     * @param message Dialog message
-     */
-    public static void showErrorAlert(Context context, String title, String message)
-    {
-        new AlertDialog.Builder(context).setTitle(title)
-                .setMessage(message).setNeutralButton("OK", null).show();
     }
 
     /**

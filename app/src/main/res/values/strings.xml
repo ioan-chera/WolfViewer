@@ -27,4 +27,11 @@
 
     <string name="welcome">Welcome to the Wolfenstein 3D Editor. Open a level set to get started.</string>
     <string name="open_levels">Open Levels</string>
+
+    <string name="yes">Yes</string>
+
+    <string name="exit">Exit</string>
+    <string name="do_not_exit">Don\'t Exit</string>
+    <string name="exit_question">Exit the Wolfenstein Editor?</string>
+    <string name="dismiss">Dismiss</string>
 </resources>

@@ -24,7 +24,7 @@ import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 
-import org.i_chera.wolfensteineditor.Global;
+import org.i_chera.wolfensteineditor.MainActivity;
 import org.i_chera.wolfensteineditor.ProgressCallback;
 import org.i_chera.wolfensteineditor.document.Document;
 
@@ -138,7 +138,8 @@ public class DocumentLoadAsyncTask extends AsyncTask<Void, ProgressCallback.Data
         }
         else
         {
-            Global.showErrorAlert(mFragment.getActivity(), "Level Load Error", "Couldn't open data " +
+            MainActivity activity = (MainActivity)mFragment.getActivity();
+            activity.showErrorAlert("Level Load Error", "Couldn't open data " +
                     "from directory " + mPath.getPath());
             if(mListener != null)
                 mListener.onFailureDocumentTask();
