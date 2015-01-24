@@ -104,6 +104,8 @@ public class LevelFragment extends Fragment implements
     private CheckBox mScrollLockCheck;
     private RelativeLayout mCentralContent;
     private ActionBarDrawerToggle mDrawerToggle;
+    private ImageView mUndoButton;
+    private ImageView mRedoButton;
 
     // display
     private int mTileSize;
@@ -187,6 +189,8 @@ public class LevelFragment extends Fragment implements
         mLeftDrawer = (LinearLayout)v.findViewById(R.id.left_drawer);
         mScrollLockCheck = (CheckBox)v.findViewById(R.id.scroll_lock_check);
         mCentralContent = (RelativeLayout)v.findViewById(R.id.central_content);
+        mUndoButton = (ImageView)v.findViewById(R.id.button_undo);
+        mRedoButton = (ImageView)v.findViewById(R.id.button_redo);
 
         mHorizontalScroll.setScrollingEnabled(false);
         mHorizontalScroll.setOnTouchListener(this);
@@ -199,6 +203,8 @@ public class LevelFragment extends Fragment implements
         mVerticalScroll.setScrollViewListener(this);
         mScrollLockCheck.setOnClickListener(this);
         mScrollLockCheck.setOnCheckedChangeListener(this);
+        mUndoButton.setOnClickListener(this);
+        mRedoButton.setOnClickListener(this);
 
         mWallList.setAdapter(new WallListAdapter());
         mWallList.setOnItemClickListener(this);
@@ -788,7 +794,15 @@ public class LevelFragment extends Fragment implements
     @Override
     public void onClick(View v)
     {
-        if(v instanceof ImageView)
+        if(v == mUndoButton)
+        {
+            undo();
+        }
+        else if(v == mRedoButton)
+        {
+            redo();
+        }
+        else if(v instanceof ImageView)
         {
             if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0,
                     mWallChoices.length() - 1))
@@ -837,16 +851,33 @@ public class LevelFragment extends Fragment implements
         }
     }
 
-    public boolean handleBackButton()
+    private boolean undo()
     {
         if(mDocument != null && mDocument.isLoaded() &&
-                Global.inBounds(mCurrentLevel, 0, LevelContainer.NUMMAPS - 1)
-                && mDocument.getLevels().hasUndo(mCurrentLevel))
+                Global.inBounds(mCurrentLevel, 0, LevelContainer.NUMMAPS - 1) &&
+                mDocument.getLevels().hasUndo(mCurrentLevel))
         {
             mDocument.getLevels().undo(mCurrentLevel);
             return true;
         }
         return false;
+    }
+
+    private boolean redo()
+    {
+        if(mDocument != null && mDocument.isLoaded() &&
+                Global.inBounds(mCurrentLevel, 0, LevelContainer.NUMMAPS - 1) &&
+                mDocument.getLevels().hasRedo(mCurrentLevel))
+        {
+            mDocument.getLevels().redo(mCurrentLevel);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean handleBackButton()
+    {
+        return undo();
     }
 
 

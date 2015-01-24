@@ -73,7 +73,7 @@ public class MainActivity extends ActionBarActivity
     public void goToLevelFragment(Document document, File path)
     {
         LevelFragment fragment = new LevelFragment();
-        fragment.setDocument(document); // unsaved data
+        fragment.setDocument(document); // set it, so it doesn't have to set it again when loaded
 
         Bundle args = new Bundle();
         args.putString(LevelFragment.ARG_PATH_NAME, path.getPath());

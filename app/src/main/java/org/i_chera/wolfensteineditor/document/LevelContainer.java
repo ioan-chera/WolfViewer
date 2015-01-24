@@ -47,6 +47,7 @@ public class LevelContainer implements DefinedSizeObject{
     private ArrayList<Stack<Runnable>> mUndoStacks;
     private ArrayList<Stack<Runnable>> mRedoStacks;
     private ArrayList<Stack<Runnable>> mCurrentStacks;
+    private boolean mRedoing;
 
     private ArrayList<WeakReference<Observer>> mObservers;
 
@@ -176,7 +177,9 @@ public class LevelContainer implements DefinedSizeObject{
     {
         if(!mRedoStacks.get(level).empty())
         {
+            mRedoing = true;
             mRedoStacks.get(level).pop().run();
+            mRedoing = false;
         }
     }
 
@@ -184,10 +187,15 @@ public class LevelContainer implements DefinedSizeObject{
     {
         return !mUndoStacks.get(level).empty();
     }
+    public boolean hasRedo(int level)
+    {
+        return !mRedoStacks.get(level).empty();
+    }
+
 
     private void pushUndo(int level, Runnable command)
     {
-        if(mCurrentStacks == mUndoStacks)
+        if(mCurrentStacks == mUndoStacks && !mRedoing)
             mRedoStacks.get(level).clear();
         mCurrentStacks.get(level).push(command);
     }

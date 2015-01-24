@@ -3,6 +3,7 @@
 
     <color name="floor">#ff717171</color>
     <color name="floor_translucent">#c8717171</color>
+    <color name="floor_translucent_pressed">#c8555555</color>
     <color name="grey_high">#80ffffff</color>
     <color name="grey_low">#80000000</color>
 
