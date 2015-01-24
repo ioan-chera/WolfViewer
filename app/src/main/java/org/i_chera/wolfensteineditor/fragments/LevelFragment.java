@@ -19,7 +19,6 @@ package org.i_chera.wolfensteineditor.fragments;
  */
 
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -201,12 +200,6 @@ public class LevelFragment extends Fragment implements
         mScrollLockCheck.setOnClickListener(this);
         mScrollLockCheck.setOnCheckedChangeListener(this);
 
-        int tColor = MainActivity.FLOOR_COLOUR;
-        tColor = Color.argb(200, Color.red(tColor), Color.green(tColor),
-                Color.blue(tColor));
-        mScrollLockCheck.setBackgroundColor(tColor);
-
-        mLeftDrawer.setBackgroundColor(MainActivity.FLOOR_COLOUR);
         mWallList.setAdapter(new WallListAdapter());
         mWallList.setOnItemClickListener(this);
 

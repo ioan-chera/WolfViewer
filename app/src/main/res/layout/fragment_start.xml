@@ -17,7 +17,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/titleView"
-        android:background="@color/lowgrey">
+        android:background="@color/grey_low">
         <android.support.v4.view.PagerTitleStrip
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -48,7 +48,6 @@ public class MainActivity extends ActionBarActivity
         super.onCreate(savedInstanceState);
         Global.initialize(this);
         setContentView(R.layout.activity_main);
-        findViewById(android.R.id.content).setBackgroundColor(FLOOR_COLOUR);
 
         if(savedInstanceState == null)
         {

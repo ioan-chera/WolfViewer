@@ -2,7 +2,8 @@
 <resources>
 
     <color name="floor">#ff717171</color>
-    <color name="highgrey">#80ffffff</color>
-    <color name="lowgrey">#80000000</color>
+    <color name="floor_translucent">#c8717171</color>
+    <color name="grey_high">#80ffffff</color>
+    <color name="grey_low">#80000000</color>
 
 </resources>
