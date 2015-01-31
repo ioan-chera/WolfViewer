@@ -40,14 +40,12 @@ public class LevelContainer implements DefinedSizeObject{
     public static final int MAPSIZE = 64;
 //    public static final int maparea = MAPSIZE * MAPSIZE;
 
-    private static final int ARBITRARY_RUNNABLE_SIZE = 16;
-
     private short[][][] mLevels;
     private String[] mLevelNames;
 
-    private ArrayList<Stack<Runnable>> mUndoStacks;
-    private ArrayList<Stack<Runnable>> mRedoStacks;
-    private ArrayList<Stack<Runnable>> mCurrentStacks;
+    private ArrayList<Stack<UndoOperation>> mUndoStacks;
+    private ArrayList<Stack<UndoOperation>> mRedoStacks;
+    private ArrayList<Stack<UndoOperation>> mCurrentStacks;
     private boolean mRedoing;
 
     private ArrayList<WeakReference<Observer>> mObservers;
@@ -79,19 +77,23 @@ public class LevelContainer implements DefinedSizeObject{
         }
 
         // It may be different than stated, but approximation is okay
-        size += calculateRunnableStacksSize(mUndoStacks);
-        size += calculateRunnableStacksSize(mRedoStacks);
+        size += calculateUndoStacksSize(mUndoStacks);
+        size += calculateUndoStacksSize(mRedoStacks);
 
         return size;
     }
 
-    private int calculateRunnableStacksSize(ArrayList<Stack<Runnable>> stacks)
+    private int calculateUndoStacksSize(ArrayList<Stack<UndoOperation>> stacks)
     {
         int size = 0;
-        if(stacks != null) {
-            for (Stack<Runnable> stack : stacks) {
-                if (stack != null) {
-                    size += ARBITRARY_RUNNABLE_SIZE * stack.size();
+        if(stacks != null)
+        {
+            for (Stack<UndoOperation> stack : stacks)
+            {
+                if (stack != null)
+                {
+                    for (UndoOperation operation : stack)
+                        size += operation.getSizeInBytes();
                 }
             }
         }
@@ -178,7 +180,7 @@ public class LevelContainer implements DefinedSizeObject{
         if(!mUndoStacks.get(level).empty())
         {
             mCurrentStacks = mRedoStacks;
-            mUndoStacks.get(level).pop().run();
+            mUndoStacks.get(level).pop().executeForLevels(this);
             mCurrentStacks = mUndoStacks;
         }
     }
@@ -188,7 +190,7 @@ public class LevelContainer implements DefinedSizeObject{
         if(!mRedoStacks.get(level).empty())
         {
             mRedoing = true;
-            mRedoStacks.get(level).pop().run();
+            mRedoStacks.get(level).pop().executeForLevels(this);
             mRedoing = false;
         }
     }
@@ -203,11 +205,11 @@ public class LevelContainer implements DefinedSizeObject{
     }
 
 
-    private void pushUndo(int level, Runnable command)
+    private void pushUndo(int level, UndoOperation operation)
     {
         if(mCurrentStacks == mUndoStacks && !mRedoing)
             mRedoStacks.get(level).clear();
-        mCurrentStacks.get(level).push(command);
+        mCurrentStacks.get(level).push(operation);
     }
 
     public void setTile(final int level, final int plane, final int i, short value)
@@ -215,14 +217,7 @@ public class LevelContainer implements DefinedSizeObject{
         final short current = mLevels[level][plane][i];
         if(current == value)
             return;
-        pushUndo(level, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                setTile(level, plane, i, current);
-            }
-        });
+        pushUndo(level, new UndoOperation(UndoOperation.SET_TILE, level, plane, i, current));
         mLevels[level][plane][i] = value;
         notifyObserversLocalChange(level, plane, i, value);
     }
@@ -256,7 +251,7 @@ public class LevelContainer implements DefinedSizeObject{
 
             raf = new RandomAccessFile(gameMaps, "r");
             int pos;
-            MapHeader newHeader = new MapHeader();
+            MapHeader newHeader;
             byte[] nameBuffer = new byte[16];
 
             short[][][] newLevels = new short[NUMMAPS][][];
@@ -289,8 +284,8 @@ public class LevelContainer implements DefinedSizeObject{
             mRedoStacks = new ArrayList<>(mLevels.length);
             for(short[][] level : mLevels)
             {
-                mUndoStacks.add(new Stack<Runnable>());
-                mRedoStacks.add(new Stack<Runnable>());
+                mUndoStacks.add(new Stack<UndoOperation>());
+                mRedoStacks.add(new Stack<UndoOperation>());
             }
             mCurrentStacks = mUndoStacks;
         }
@@ -376,7 +371,7 @@ public class LevelContainer implements DefinedSizeObject{
 
     public void writeFile(File mapHead, File gameMaps)
     {
-
+        // TODO: write to files
     }
 
     private class MapHeader
