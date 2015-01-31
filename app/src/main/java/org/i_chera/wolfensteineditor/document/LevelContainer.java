@@ -116,6 +116,14 @@ public class LevelContainer implements DefinedSizeObject{
     {
         if(mObservers == null)
             mObservers = new ArrayList<>();
+        for(WeakReference<Observer> reference : mObservers)
+        {
+            if(reference.get() == who)
+            {
+                return; // already added
+            }
+        }
+
         mObservers.add(new WeakReference<>(who));
         Log.i("LevelContainer", "Observers: " + mObservers.size());
     }
@@ -125,13 +133,14 @@ public class LevelContainer implements DefinedSizeObject{
         if(mObservers == null)
             return;
         int i = 0;
-        WeakReference<LevelContainer.Observer> wr;
+
+        WeakReference<LevelContainer.Observer> reference;
         while(i < mObservers.size())
         {
-            wr = mObservers.get(i);
-            if(wr.get() == null || wr.get() == who)
+            reference = mObservers.get(i);
+            if(reference.get() == null || reference.get() == who)
             {
-                mObservers.remove(wr);
+                mObservers.remove(reference);
                 i = 0;
                 continue;
             }

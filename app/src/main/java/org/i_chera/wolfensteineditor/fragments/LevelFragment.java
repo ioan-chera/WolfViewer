@@ -131,16 +131,19 @@ public class LevelFragment extends Fragment implements
         {
             mCurrentLevel = savedInstanceState.getInt(STATE_CURRENT_LEVEL);
         }
-        if(getArguments() != null)
+        readArguments();
+        if(mPath != null && mDocument == null)
         {
-            mPath = new File(getArguments().getString(ARG_PATH_NAME));
-            if(mDocument == null)
-            {
-                mDocument = StateSaver.withdrawDocument(mPath);
-            }
+            mDocument = StateSaver.withdrawDocument(mPath);
         }
 
         setHasOptionsMenu(true);
+    }
+
+    private void readArguments()
+    {
+        if(getArguments() != null)
+            mPath = new File(getArguments().getString(ARG_PATH_NAME));
     }
 
     @Override
@@ -314,8 +317,14 @@ public class LevelFragment extends Fragment implements
                 }
 
                 @Override
-                public void onSuccessDocumentTask(Document document, File path) {
-                    ((MainActivity) getActivity()).goToLevelFragment(document, path);
+                public void onSuccessDocumentTask(Document document, File path)
+                {
+                    setDocument(document);
+                    if(getArguments() != null)
+                        getArguments().putString(ARG_PATH_NAME, path.getPath());
+                    readArguments();
+                    updateData();
+                    onResume(); // on resume needs to be re-called
                 }
 
                 @Override
@@ -362,7 +371,7 @@ public class LevelFragment extends Fragment implements
         tryCancelTask(true);
     }
 
-    public void updateData()
+    private void updateData()
     {
         if(mGridLayout == null)
             return;	// will be done anyway upon creation
@@ -391,7 +400,7 @@ public class LevelFragment extends Fragment implements
 
         Point viewportPosition = new Point(mHorizontalScroll.getScrollX(),
                 mVerticalScroll.getScrollY());
-        Log.i(TAG, "Point: " + viewportPosition);
+//        Log.i(TAG, "Point: " + viewportPosition);
         Rect viewportRect = new Rect(viewportPosition.x,
                 viewportPosition.y, viewportPosition.x + mViewportSize.x,
                 viewportPosition.y + mViewportSize.y);
@@ -496,6 +505,7 @@ public class LevelFragment extends Fragment implements
             if(mPressDown)
                 mPressDown = false;	// cancel any pressed thing
 
+            // this may be needed to prevent useless scrolling responses
             if(mDocument == null || !mDocument.isLoaded())
                 return;
             if(mVisGrid == null)
@@ -523,11 +533,7 @@ public class LevelFragment extends Fragment implements
     public void onOverScrolled(FrameLayout scrollView, int scrollX,
                                int scrollY, boolean clampedX, boolean clampedY)
     {
-        // unreliable
-//		if(scrollView == mHorizontalScroll || scrollView == mVerticalScroll)
-//		{
-//			mPressDown = false;
-//		}
+        // this method must be here despite doing nothing
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -548,8 +554,8 @@ public class LevelFragment extends Fragment implements
     @Override
     public void createVisTile(int i, int j)
     {
-        int ms = LevelContainer.MAPSIZE - 1;
-        if(!Global.inBounds(i, 0, ms) || !Global.inBounds(j, 0, ms))
+        int mapSize = LevelContainer.MAPSIZE - 1;
+        if(!Global.inBounds(i, 0, mapSize) || !Global.inBounds(j, 0, mapSize))
         {
 //			Log.d(TAG, "Refused create " + i + " " + j);
             return;
@@ -563,9 +569,6 @@ public class LevelFragment extends Fragment implements
         rllp.leftMargin = j * mTileSize;
         rllp.topMargin = i * mTileSize;
         mTileViews[i][j].setLayoutParams(rllp);
-//		mTileViews[i][j].setOnClickListener(this);
-//		mTileViews[i][j].setOnTouchListener(this);
-//		mTileViews[i][j].setClickable(true);
         mGridLayout.addView(mTileViews[i][j]);
 
         updateGraphics(mTileViews[i][j], j, i);
@@ -582,7 +585,7 @@ public class LevelFragment extends Fragment implements
         }
         ImageView iv = null;
         if(Global.inBounds(i1, 0, ms) && Global.inBounds(j1, 0, ms))
-            iv= mTileViews[i1][j1];
+            iv = mTileViews[i1][j1];
         // let's be careful, okay?
         if(iv == null)
         {
@@ -784,7 +787,7 @@ public class LevelFragment extends Fragment implements
             return;
         }
         mWallChoices = array;
-        Global.boundValue(mCurrentWallChoice, 0, mWallChoices.length() - 1);
+        mCurrentWallChoice = Global.boundValue(mCurrentWallChoice, 0, mWallChoices.length() - 1);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -804,10 +807,16 @@ public class LevelFragment extends Fragment implements
         {
             if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0,
                     mWallChoices.length() - 1))
+            {
+                Log.e(TAG, "Wall choices error: " + mWallChoices + " " + mCurrentWallChoice);
                 return;
+            }
             JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
             if(obj == null)
+            {
+                Log.e(TAG, "Empty wall choice");
                 return;
+            }
 //			Log.i(TAG, "Clicked " + v.getId() % 64 + " " + v.getId() / 64 + " real " +
 //				((RelativeLayout.LayoutParams)v.getLayoutParams()).leftMargin / v.getWidth() + " " +
 //				((RelativeLayout.LayoutParams)v.getLayoutParams()).topMargin / v.getHeight());
