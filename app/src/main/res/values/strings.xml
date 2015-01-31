@@ -41,6 +41,11 @@
     <string name="close_document_question">Close this document and return to start menu?</string>
     <string name="do_not_close">Don\'t Close</string>
 
+    <string name="level_load_error">Level Load Error</string>
+    <string name="could_not_open_data">Couldn\'t open data from directory </string>
+
+    <string name="loading_levels">Loading Levels&#8230;</string>
+    <string name="starting">Starting&#8230;</string>
     <string name="checking_for_files">Checking for files&#8230;</string>
     <string name="loading_vswap_file">Loading VSWAP file&#8230;</string>
     <string name="loading_maphead_gamemaps">Loading MAPHEAD and GAMEMAPS files&#8230;</string>

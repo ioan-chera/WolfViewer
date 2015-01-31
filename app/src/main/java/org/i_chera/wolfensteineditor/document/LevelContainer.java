@@ -47,11 +47,14 @@ public class LevelContainer implements DefinedSizeObject{
     private static final int LEVEL_NAME_LENGTH = 16;
     private static final int MAP_HEADER_SIZE = 3 * 4 + 3 * 2 + 2 + 2 + LEVEL_NAME_LENGTH;
 
+    // data to be saved
     private short[][][] mLevels;
     private String[] mLevelNames;
 
     private ArrayList<Stack<UndoOperation>> mUndoStacks;
     private ArrayList<Stack<UndoOperation>> mRedoStacks;
+
+    // dynamic states
     private ArrayList<Stack<UndoOperation>> mCurrentStacks;
     private boolean mRedoing;
 

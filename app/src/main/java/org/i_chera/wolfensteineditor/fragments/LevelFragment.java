@@ -57,6 +57,7 @@ import org.i_chera.wolfensteineditor.StateSaver;
 import org.i_chera.wolfensteineditor.document.Document;
 import org.i_chera.wolfensteineditor.document.LevelContainer;
 import org.i_chera.wolfensteineditor.fragments.tasks.DocumentLoadAsyncTask;
+import org.i_chera.wolfensteineditor.fragments.tasks.DocumentSaveAsyncTask;
 import org.i_chera.wolfensteineditor.ui.HXScrollView;
 import org.i_chera.wolfensteineditor.ui.ScrollViewListener;
 import org.i_chera.wolfensteineditor.ui.VXScrollView;
@@ -95,7 +96,8 @@ public class LevelFragment extends Fragment implements
 
     // document
     private Document mDocument;
-    private DocumentLoadAsyncTask mTask;
+    private DocumentLoadAsyncTask mAutoloadTask;
+    private static DocumentSaveAsyncTask sAutosaveTask; // one global one
 
     // widgets
     private RelativeLayout mGridLayout;
@@ -304,20 +306,20 @@ public class LevelFragment extends Fragment implements
         }
         else
         {
-            tryCancelTask();
-            mTask = new DocumentLoadAsyncTask(getActivity().getApplicationContext(), this, mPath,
+            tryCancelAutoloadTask();
+            mAutoloadTask = new DocumentLoadAsyncTask(getActivity().getApplicationContext(), this, mPath,
                     new DocumentLoadAsyncTask.Listener()
             {
                 @Override
                 public void tryCancelDocumentTask()
                 {
-                    tryCancelTask();
+                    tryCancelAutoloadTask();
                 }
 
                 @Override
                 public void removeDocumentTask()
                 {
-                    mTask = null;
+                    mAutoloadTask = null;
                 }
 
                 @Override
@@ -337,7 +339,7 @@ public class LevelFragment extends Fragment implements
                     ((MainActivity) getActivity()).goToStartFragment();
                 }
             });
-            mTask.execute();
+            mAutoloadTask.execute();
         }
     }
 
@@ -352,20 +354,59 @@ public class LevelFragment extends Fragment implements
         }
     }
 
-    private void tryCancelTask(boolean destroy)
+    private void tryCancelAutoloadTask(boolean destroy)
     {
-        if(mTask != null && !mTask.isCancelled())
+        if(mAutoloadTask != null && !mAutoloadTask.isCancelled())
         {
             if(destroy)
-                mTask.destroy();
+                mAutoloadTask.destroy();
             else
-                mTask.cancel(false);
+                mAutoloadTask.cancel(false);
         }
     }
 
-    private void tryCancelTask()
+    private void tryCancelAutoloadTask()
     {
-        tryCancelTask(false);
+        tryCancelAutoloadTask(false);
+    }
+
+    private void tryCancelAutosaveTask(boolean destroy)
+    {
+        if(sAutosaveTask != null && !sAutosaveTask.isCancelled())
+        {
+            if(destroy)
+                sAutosaveTask.destroy();
+            else
+                sAutosaveTask.cancel(false);
+        }
+    }
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+        if(!mDocument.isLoaded())
+            return;
+
+        if(sAutosaveTask != null)
+        {
+            Log.w("LevelFragment", "Autosave task already running; exiting");
+            return;
+        }
+        // Also look if it's in the StateSaver
+
+        // TODO: consider the manual saving situation
+        sAutosaveTask = new DocumentSaveAsyncTask(getActivity().getApplicationContext(),
+                new DocumentSaveAsyncTask.Listener()
+        {
+            @Override
+            public void removeDocumentTask()
+            {
+                Log.i("LevelFragment", "Document autosaved");
+                sAutosaveTask = null;
+            }
+        });
+        sAutosaveTask.execute(mDocument);
     }
 
     @Override
@@ -373,7 +414,7 @@ public class LevelFragment extends Fragment implements
     {
         super.onDestroy();
         mGridLayout.removeAllViews();
-        tryCancelTask(true);
+        tryCancelAutoloadTask(true);
     }
 
     private void updateData()

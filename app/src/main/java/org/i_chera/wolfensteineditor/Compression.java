@@ -143,7 +143,7 @@ public class Compression {
         {
             count = 1;
             value = source[sourceIndex++];
-            while(source[sourceIndex] == value && sourceIndex < source.length)
+            while(sourceIndex < source.length && source[sourceIndex] == value)
             {
                 ++count;
                 ++sourceIndex;
@@ -207,7 +207,7 @@ public class Compression {
                     maxstring = 255;
 
                 string = 1;
-                while(source.get(inscan + string).equals(source.get(inptr + string)) && string < maxstring)
+                while(string < maxstring && source.get(inscan + string).equals(source.get(inptr + string)))
                 {
                     ++string;
                 }
