@@ -47,6 +47,8 @@ public class DocumentLoadAsyncTask extends AsyncTask<Void, ProgressCallback.Data
     private final File mPath;
     private final Context mContext;
 
+    private boolean mAutoload;
+
     private ProgressDialog mProgressDialog;
     private boolean mDestroyed;
 
@@ -57,6 +59,11 @@ public class DocumentLoadAsyncTask extends AsyncTask<Void, ProgressCallback.Data
         mListener = listener;
         mPath = path;
         mContext = context;
+    }
+
+    public void setAutoload()
+    {
+        mAutoload = true;
     }
 
     @Override
@@ -76,7 +83,7 @@ public class DocumentLoadAsyncTask extends AsyncTask<Void, ProgressCallback.Data
     @Override
     protected Document doInBackground(Void... params) {
         Document document = new Document();
-        boolean result = document.loadFromDirectory(mContext, mPath, new ProgressCallback() {
+        boolean result = document.loadFromDirectory(mContext, mPath, mAutoload, new ProgressCallback() {
             @Override
             public void onProgress(int position, int max, String message) {
                 ProgressCallback.Data data = new ProgressCallback.Data();

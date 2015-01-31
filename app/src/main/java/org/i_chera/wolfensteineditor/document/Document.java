@@ -19,6 +19,7 @@ package org.i_chera.wolfensteineditor.document;
  */
 
 import android.content.Context;
+import android.util.Log;
 
 import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.ProgressCallback;
@@ -28,6 +29,8 @@ import java.io.File;
 
 public class Document implements DefinedSizeObject
 {
+    private static final String AUTOSAVE_DIRECTORY = "autosave";
+
     // Wolf data
     private VSwapContainer	mVSwap;
     private LevelContainer	mLevels;
@@ -77,6 +80,13 @@ public class Document implements DefinedSizeObject
      */
     public boolean loadFromDirectory(Context context, File directory, ProgressCallback progressUpdater)
     {
+        return loadFromDirectory(context, directory, false, progressUpdater);
+    }
+    public boolean loadFromDirectory(Context context, File directory, boolean autoload, ProgressCallback progressUpdater)
+    {
+        File realDirectory = directory;
+        if(autoload)
+            directory = new File(context.getFilesDir(), AUTOSAVE_DIRECTORY);
         if(!directory.isDirectory())
             return false;
 
@@ -85,30 +95,45 @@ public class Document implements DefinedSizeObject
             progressUpdater.onProgress(1, 4, context.getString(R.string.checking_for_files));
         File vSwapFile = new File(directory, "vswap.wl6");
         if(!vSwapFile.exists())
+        {
+            Log.e("Document", "vswap file doesn't exist");
             return false;
+        }
         File mapHeadFile = new File(directory, "maphead.wl6");
         if(!mapHeadFile.exists())
+        {
+            Log.e("Document", "maphead file doesn't exist");
             return false;
+        }
         File gameMapsFile = new File(directory, "gamemaps.wl6");
         if(!gameMapsFile.exists())
+        {
+            Log.e("Document", "gamemaps file doesn't exist");
             return false;
+        }
 
         // Try loading vswap container
         if(progressUpdater != null)
             progressUpdater.onProgress(2, 4, context.getString(R.string.loading_vswap_file));
         VSwapContainer vswap = new VSwapContainer();
         if(!vswap.loadFile(vSwapFile))
+        {
+            Log.e("Document", "Couldn't load vswap");
             return false;
+        }
 
         // Try loading level container
         if(progressUpdater != null)
             progressUpdater.onProgress(3, 4, context.getString(R.string.loading_maphead_gamemaps));
         LevelContainer levels = new LevelContainer();
         if(!levels.loadFile(mapHeadFile, gameMapsFile))
+        {
+            Log.e("Document", "Couldn't load levels");
             return false;
+        }
 
         // Success
-        mDirectory = directory;
+        mDirectory = realDirectory;
         mVSwap = vswap;
         mLevels = levels;
         return true;
@@ -118,7 +143,7 @@ public class Document implements DefinedSizeObject
     {
         if(progressUpdater != null)
             progressUpdater.onProgress(1, 4, context.getString(R.string.autosaving));
-        File directory = new File(context.getFilesDir(), "autosave");
+        File directory = new File(context.getFilesDir(), AUTOSAVE_DIRECTORY);
         if(!directory.mkdir() && !directory.isDirectory())
             return false;
 

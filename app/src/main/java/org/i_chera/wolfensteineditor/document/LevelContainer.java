@@ -244,9 +244,15 @@ public class LevelContainer implements DefinedSizeObject{
         try
         {
             if(mapHead.isDirectory() || gameMaps.isDirectory())
+            {
+                Log.e("LevelContainer", "either file is a directory");
                 return false;
+            }
             if(mapHead.length() < 2 + 4 * NUMMAPS)
+            {
+                Log.e("LevelContainer", "invalid maphead size " + mapHead.length());
                 return false;
+            }
 
             int newRlewTag;
             int[] headerOffsets = new int[NUMMAPS];
@@ -285,7 +291,10 @@ public class LevelContainer implements DefinedSizeObject{
 
                 newLevels[i] = cacheMap(raf, newHeader, newRlewTag);
                 if(newLevels[i] == null)
+                {
+                    Log.e("LevelContainer", "couldn't load level " + i);
                     return false;
+                }
             }
             // All ok
             mLevels = newLevels;
@@ -301,12 +310,12 @@ public class LevelContainer implements DefinedSizeObject{
         }
         catch(FileNotFoundException e)
         {
-            e.printStackTrace();
+            Log.e("LevelContainer", "file not found " + e.getMessage());
             return false;
         }
         catch(IOException e)
         {
-            e.printStackTrace();
+            Log.e("LevelContainer", "file error " + e.getMessage());
             return false;
         }
         finally
@@ -390,8 +399,8 @@ public class LevelContainer implements DefinedSizeObject{
                     rlew = Compression.rlewCompress(plane, (short)OUTPUT_RLEW_TAG, 1);
                     rlew.set(0, (short)(plane.length * 2));
                     carmack = Compression.carmackCompress(rlew, 2);
-                    carmack.set(0, (byte)(rlew.size() & 0xff));
-                    carmack.set(1, (byte)(rlew.size() >>> 8));
+                    carmack.set(0, (byte)((2 * rlew.size()) & 0xff));
+                    carmack.set(1, (byte)((2 * rlew.size()) >>> 8));
                     headers[i].planeStart[j] = position;
                     headers[i].planeLength[j] = carmack.size();
                     position += carmack.size();
@@ -419,7 +428,7 @@ public class LevelContainer implements DefinedSizeObject{
                 FileUtil.writeInt16(mapsStream, 64);
                 FileUtil.writeInt16(mapsStream, 64);
                 byte[] levelNameBytes = mLevelNames[i].getBytes("UTF-8");
-                for(int j = 0; i < LEVEL_NAME_LENGTH; ++i)
+                for(int j = 0; j < LEVEL_NAME_LENGTH; ++j)
                 {
                     mapsStream.write(j < levelNameBytes.length ? levelNameBytes[j] : 0);
                 }

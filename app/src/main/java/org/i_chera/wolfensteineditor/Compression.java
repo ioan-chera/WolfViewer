@@ -191,6 +191,8 @@ public class Compression {
         int string;
         int bestscan = 0;
 
+        short op1, op2;
+
         do
         {
             ch = source.get(inptr) & 0xffff;
@@ -207,9 +209,17 @@ public class Compression {
                     maxstring = 255;
 
                 string = 1;
-                while(string < maxstring && source.get(inscan + string).equals(source.get(inptr + string)))
+
+                while(string < maxstring)
                 {
-                    ++string;
+                    op1 = source.get(inscan + string);
+                    op2 = source.get(inptr + string);
+                    if(op1 == op2)
+                    {
+                        ++string;
+                    }
+                    else
+                        break;
                 }
                 if(string >= beststring)
                 {

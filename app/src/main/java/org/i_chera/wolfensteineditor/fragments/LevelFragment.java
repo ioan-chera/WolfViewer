@@ -339,6 +339,7 @@ public class LevelFragment extends Fragment implements
                     ((MainActivity) getActivity()).goToStartFragment();
                 }
             });
+            mAutoloadTask.setAutoload();
             mAutoloadTask.execute();
         }
     }
