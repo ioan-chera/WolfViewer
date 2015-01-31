@@ -18,8 +18,11 @@ package org.i_chera.wolfensteineditor.document;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import android.content.Context;
+
 import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.ProgressCallback;
+import org.i_chera.wolfensteineditor.R;
 
 import java.io.File;
 
@@ -72,14 +75,14 @@ public class Document implements DefinedSizeObject
      * @param directory Directory containing Wolfenstein files
      * @return True on success
      */
-    public boolean loadFromDirectory(File directory, ProgressCallback progressUpdater)
+    public boolean loadFromDirectory(Context context, File directory, ProgressCallback progressUpdater)
     {
         if(!directory.isDirectory())
             return false;
 
         // First check if files exist
         if(progressUpdater != null)
-            progressUpdater.onProgress(1, 4, "Checking for files...");
+            progressUpdater.onProgress(1, 4, context.getString(R.string.checking_for_files));
         File vSwapFile = new File(directory, "vswap.wl6");
         if(!vSwapFile.exists())
             return false;
@@ -92,14 +95,14 @@ public class Document implements DefinedSizeObject
 
         // Try loading vswap container
         if(progressUpdater != null)
-            progressUpdater.onProgress(2, 4, "Loading VSWAP file...");
+            progressUpdater.onProgress(2, 4, context.getString(R.string.loading_vswap_file));
         VSwapContainer vswap = new VSwapContainer();
         if(!vswap.loadFile(vSwapFile))
             return false;
 
         // Try loading level container
         if(progressUpdater != null)
-            progressUpdater.onProgress(3, 4, "Loading MAPHEAD and GAMEMAPS files...");
+            progressUpdater.onProgress(3, 4, context.getString(R.string.loading_maphead_gamemaps));
         LevelContainer levels = new LevelContainer();
         if(!levels.loadFile(mapHeadFile, gameMapsFile))
             return false;
@@ -108,6 +111,31 @@ public class Document implements DefinedSizeObject
         mDirectory = directory;
         mVSwap = vswap;
         mLevels = levels;
+        return true;
+    }
+
+    public boolean autosave(Context context, ProgressCallback progressUpdater)
+    {
+        if(progressUpdater != null)
+            progressUpdater.onProgress(1, 4, context.getString(R.string.autosaving));
+        File directory = new File(context.getFilesDir(), "autosave");
+        if(!directory.mkdir() && !directory.isDirectory())
+            return false;
+
+        File vSwapFile = new File(directory, "vswap.wl6");
+        File mapHeadFile = new File(directory, "maphead.wl6");
+        File gameMapsFile = new File(directory, "gamemaps.wl6");
+
+        if(progressUpdater != null)
+            progressUpdater.onProgress(2, 4, context.getString(R.string.saving_vswap_file));
+        if(!mVSwap.writeFile(vSwapFile))
+            return false;
+
+        if(progressUpdater != null)
+            progressUpdater.onProgress(3, 4, context.getString(R.string.saving_maphead_gamemaps));
+        if(!mLevels.writeFile(mapHeadFile, gameMapsFile))
+            return false;
+
         return true;
     }
 

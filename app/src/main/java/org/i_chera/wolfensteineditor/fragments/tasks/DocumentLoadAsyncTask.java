@@ -19,6 +19,7 @@ package org.i_chera.wolfensteineditor.fragments.tasks;
  */
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
@@ -43,16 +44,18 @@ public class DocumentLoadAsyncTask extends AsyncTask<Void, ProgressCallback.Data
     private final Fragment mFragment;
     private final Listener mListener;
     private final File mPath;
+    private final Context mContext;
 
     private ProgressDialog mProgressDialog;
     private boolean mDestroyed;
 
-    public DocumentLoadAsyncTask(Fragment fragment, File path, Listener listener)
+    public DocumentLoadAsyncTask(Context context, Fragment fragment, File path, Listener listener)
     {
         assert fragment != null;
         mFragment = fragment;
         mListener = listener;
         mPath = path;
+        mContext = context;
     }
 
     @Override
@@ -72,7 +75,7 @@ public class DocumentLoadAsyncTask extends AsyncTask<Void, ProgressCallback.Data
     @Override
     protected Document doInBackground(Void... params) {
         Document document = new Document();
-        boolean result = document.loadFromDirectory(mPath, new ProgressCallback() {
+        boolean result = document.loadFromDirectory(mContext, mPath, new ProgressCallback() {
             @Override
             public void onProgress(int position, int max, String message) {
                 ProgressCallback.Data data = new ProgressCallback.Data();

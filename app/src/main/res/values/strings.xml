@@ -40,4 +40,12 @@
     <string name="close_document">Close Document</string>
     <string name="close_document_question">Close this document and return to start menu?</string>
     <string name="do_not_close">Don\'t Close</string>
+
+    <string name="checking_for_files">Checking for files&#8230;</string>
+    <string name="loading_vswap_file">Loading VSWAP file&#8230;</string>
+    <string name="loading_maphead_gamemaps">Loading MAPHEAD and GAMEMAPS files&#8230;</string>
+
+    <string name="autosaving">Autosaving&#8230;</string>
+    <string name="saving_vswap_file">Saving VSWAP file&#8230;</string>
+    <string name="saving_maphead_gamemaps">Saving MAPHEAD and GAMEMAPS files&#8230;</string>
 </resources>

@@ -305,14 +305,18 @@ public class LevelFragment extends Fragment implements
         else
         {
             tryCancelTask();
-            mTask = new DocumentLoadAsyncTask(this, mPath, new DocumentLoadAsyncTask.Listener() {
+            mTask = new DocumentLoadAsyncTask(getActivity().getApplicationContext(), this, mPath,
+                    new DocumentLoadAsyncTask.Listener()
+            {
                 @Override
-                public void tryCancelDocumentTask() {
+                public void tryCancelDocumentTask()
+                {
                     tryCancelTask();
                 }
 
                 @Override
-                public void removeDocumentTask() {
+                public void removeDocumentTask()
+                {
                     mTask = null;
                 }
 
@@ -320,7 +324,7 @@ public class LevelFragment extends Fragment implements
                 public void onSuccessDocumentTask(Document document, File path)
                 {
                     setDocument(document);
-                    if(getArguments() != null)
+                    if (getArguments() != null)
                         getArguments().putString(ARG_PATH_NAME, path.getPath());
                     readArguments();
                     updateData();
@@ -328,8 +332,9 @@ public class LevelFragment extends Fragment implements
                 }
 
                 @Override
-                public void onFailureDocumentTask() {
-                    ((MainActivity)getActivity()).goToStartFragment();
+                public void onFailureDocumentTask()
+                {
+                    ((MainActivity) getActivity()).goToStartFragment();
                 }
             });
             mTask.execute();
