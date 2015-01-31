@@ -68,7 +68,7 @@ public class LevelContainer implements DefinedSizeObject{
     }
 
     @Override
-    public int getSizeInBytes()
+    public synchronized int getSizeInBytes()
     {
         int size = 0;
         if(mLevels != null) {
@@ -95,7 +95,7 @@ public class LevelContainer implements DefinedSizeObject{
         return size;
     }
 
-    private int calculateUndoStacksSize(ArrayList<Stack<UndoOperation>> stacks)
+    private synchronized int calculateUndoStacksSize(ArrayList<Stack<UndoOperation>> stacks)
     {
         int size = 0;
         if(stacks != null)
@@ -177,7 +177,7 @@ public class LevelContainer implements DefinedSizeObject{
         return sCeilingColours[index];
     }
 
-    public short getTile(int level, int plane, int x, int y)
+    public synchronized short getTile(int level, int plane, int x, int y)
     {
         return mLevels[level][plane][y * MAPSIZE + x];
     }
@@ -187,7 +187,7 @@ public class LevelContainer implements DefinedSizeObject{
 //        return mLevels[level][plane][i];
 //    }
 
-    public void undo(int level)
+    public synchronized void undo(int level)
     {
         if(!mUndoStacks.get(level).empty())
         {
@@ -197,7 +197,7 @@ public class LevelContainer implements DefinedSizeObject{
         }
     }
 
-    public void redo(int level)
+    public synchronized void redo(int level)
     {
         if(!mRedoStacks.get(level).empty())
         {
@@ -207,24 +207,24 @@ public class LevelContainer implements DefinedSizeObject{
         }
     }
 
-    public boolean hasUndo(int level)
+    public synchronized boolean hasUndo(int level)
     {
         return !mUndoStacks.get(level).empty();
     }
-    public boolean hasRedo(int level)
+    public synchronized boolean hasRedo(int level)
     {
         return !mRedoStacks.get(level).empty();
     }
 
 
-    private void pushUndo(int level, UndoOperation operation)
+    private synchronized void pushUndo(int level, UndoOperation operation)
     {
         if(mCurrentStacks == mUndoStacks && !mRedoing)
             mRedoStacks.get(level).clear();
         mCurrentStacks.get(level).push(operation);
     }
 
-    public void setTile(final int level, final int plane, final int i, short value)
+    public synchronized void setTile(final int level, final int plane, final int i, short value)
     {
         final short current = mLevels[level][plane][i];
         if(current == value)
@@ -234,12 +234,12 @@ public class LevelContainer implements DefinedSizeObject{
         notifyObserversLocalChange(level, plane, i, value);
     }
 
-    public String getLevelName(int n)
+    public synchronized String getLevelName(int n)
     {
         return mLevelNames[n];
     }
 
-    public boolean loadFile(File mapHead, File gameMaps)
+    public synchronized boolean loadFile(File mapHead, File gameMaps)
     {
         FileInputStream fis = null;
         RandomAccessFile raf = null;
@@ -328,7 +328,7 @@ public class LevelContainer implements DefinedSizeObject{
         return true;
     }
 
-    private short[][] cacheMap(RandomAccessFile raf, MapHeader newHeader,
+    private synchronized short[][] cacheMap(RandomAccessFile raf, MapHeader newHeader,
                                int newRlewTag) throws IOException
     {
         short[][] ret = new short[MAPPLANES][];
@@ -370,7 +370,7 @@ public class LevelContainer implements DefinedSizeObject{
         return ret;
     }
 
-    public boolean writeFile(File mapHead, File gameMaps)
+    public synchronized boolean writeFile(File mapHead, File gameMaps)
     {
         // TODO: make the writing atomic. Also delete the temporary files if an error occurs
         OutputStream headStream = null;
@@ -449,7 +449,7 @@ public class LevelContainer implements DefinedSizeObject{
         return true;
     }
 
-    public boolean loadUndoRedo(File undoFile, File redoFile)
+    public synchronized boolean loadUndoRedo(File undoFile, File redoFile)
     {
         InputStream undoStream = null;
         InputStream redoStream = null;
@@ -490,7 +490,7 @@ public class LevelContainer implements DefinedSizeObject{
         return true;
     }
 
-    private OutputStream writeWhichStack(ArrayList<Stack<UndoOperation>> stacks, File file) throws IOException
+    private synchronized OutputStream writeWhichStack(ArrayList<Stack<UndoOperation>> stacks, File file) throws IOException
     {
         OutputStream stream = null;
         if(stacks != null && stacks.size() > 0)
@@ -511,7 +511,7 @@ public class LevelContainer implements DefinedSizeObject{
         return stream;
     }
 
-    public boolean writeUndoRedo(File undoFile, File redoFile)
+    public synchronized boolean writeUndoRedo(File undoFile, File redoFile)
     {
         OutputStream undoStream = null;
         OutputStream redoStream = null;
