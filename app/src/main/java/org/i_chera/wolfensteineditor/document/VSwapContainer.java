@@ -26,9 +26,11 @@ import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.FileUtil;
 import org.i_chera.wolfensteineditor.Palette;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
@@ -264,11 +266,6 @@ public class VSwapContainer implements DefinedSizeObject{
             mPages = newPages;
 
         }
-        catch(FileNotFoundException fnfe)
-        {
-            fnfe.printStackTrace();
-            return false;
-        }
         catch(IOException ioe)
         {
             ioe.printStackTrace();
@@ -276,16 +273,50 @@ public class VSwapContainer implements DefinedSizeObject{
         }
         finally
         {
-            try
-            {
-                if(raf != null)
-                    raf.close();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
+            FileUtil.close(raf);
         }
         return true;
     }
+
+    public boolean writeFile(File file)
+    {
+        // TODO: write atomically and delete on error
+        OutputStream stream = null;
+        try
+        {
+            stream = new BufferedOutputStream(new FileOutputStream(file));
+            int position = 6 + (mPages.size() + 1) * 4 + mPages.size() * 2;
+            FileUtil.writeInt16(stream, mPages.size());
+            FileUtil.writeInt16(stream, mSpriteStart);
+            FileUtil.writeInt16(stream, mSoundStart);
+
+            for(int i = 0; i < mPages.size(); ++i)
+            {
+                FileUtil.writeInt32(stream, position);
+                position += mPages.get(i).length;
+            }
+            FileUtil.writeInt32(stream, position);
+
+            for(int i = 0; i < mPages.size(); ++i)
+            {
+                FileUtil.writeInt16(stream, mPages.get(i).length);
+            }
+
+            for(int i = 0; i < mPages.size(); ++i)
+            {
+                stream.write(mPages.get(i));
+            }
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+        finally
+        {
+            FileUtil.close(stream);
+        }
+        return true;
+    }
+
 }
