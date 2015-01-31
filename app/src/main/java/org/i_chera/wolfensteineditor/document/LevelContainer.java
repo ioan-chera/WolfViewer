@@ -25,10 +25,13 @@ import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.FileUtil;
 import org.i_chera.wolfensteineditor.Global;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -39,6 +42,10 @@ public class LevelContainer implements DefinedSizeObject{
     public static final int MAPPLANES = 2;
     public static final int MAPSIZE = 64;
 //    public static final int maparea = MAPSIZE * MAPSIZE;
+    private static final int OUTPUT_RLEW_TAG = 0xabcd;
+    private static final byte[] MAPS_MARKER = new byte[] { 'T', 'E', 'D', '5', 'v', '1', '.', '0' };
+    private static final int LEVEL_NAME_LENGTH = 16;
+    private static final int MAP_HEADER_SIZE = 3 * 4 + 3 * 2 + 2 + 2 + LEVEL_NAME_LENGTH;
 
     private short[][][] mLevels;
     private String[] mLevelNames;
@@ -252,7 +259,7 @@ public class LevelContainer implements DefinedSizeObject{
             raf = new RandomAccessFile(gameMaps, "r");
             int pos;
             MapHeader newHeader;
-            byte[] nameBuffer = new byte[16];
+            byte[] nameBuffer = new byte[LEVEL_NAME_LENGTH];
 
             short[][][] newLevels = new short[NUMMAPS][][];
             String[] newLevelNames = new String[NUMMAPS];
@@ -301,28 +308,8 @@ public class LevelContainer implements DefinedSizeObject{
         }
         finally
         {
-            if(fis != null)
-            {
-                try
-                {
-                    fis.close();
-                }
-                catch(IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-            if(raf != null)
-            {
-                try
-                {
-                    raf.close();
-                }
-                catch(IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }
+            FileUtil.close(fis);
+            FileUtil.close(raf);
         }
         return true;
     }
@@ -369,9 +356,83 @@ public class LevelContainer implements DefinedSizeObject{
         return ret;
     }
 
-    public void writeFile(File mapHead, File gameMaps)
+    public boolean writeFile(File mapHead, File gameMaps)
     {
-        // TODO: write to files
+        // TODO: make the writing atomic. Also delete the temporary files if an error occurs
+        OutputStream headStream = null;
+        OutputStream mapsStream = null;
+        try
+        {
+            headStream = new BufferedOutputStream(new FileOutputStream(mapHead));
+
+            // write rlew tag
+            FileUtil.writeInt16(headStream, OUTPUT_RLEW_TAG);
+
+            mapsStream = new BufferedOutputStream(new FileOutputStream(gameMaps));
+            mapsStream.write(MAPS_MARKER);
+
+            MapHeader[] headers = new MapHeader[60];
+
+            int position = MAPS_MARKER.length;
+
+            ArrayList<Short> rlew;
+            ArrayList<Byte> carmack;
+
+            for(int i = 0; i < NUMMAPS; ++i)
+            {
+                headers[i] = new MapHeader();
+                for(int j = 0; j < MAPPLANES; ++j)
+                {
+                    short[] plane = mLevels[i][j];
+                    rlew = Compression.rlewCompress(plane, (short)OUTPUT_RLEW_TAG, 1);
+                    rlew.set(0, (short)(plane.length * 2));
+                    carmack = Compression.carmackCompress(rlew, 2);
+                    carmack.set(0, (byte)(rlew.size() & 0xff));
+                    carmack.set(1, (byte)(rlew.size() >>> 8));
+                    headers[i].planeStart[j] = position;
+                    headers[i].planeLength[j] = carmack.size();
+                    position += carmack.size();
+
+                    byte[] carmackRaw = new byte[carmack.size()];
+                    for(int k = 0; k < carmackRaw.length; ++k)
+                    {
+                        carmackRaw[k] = carmack.get(k);
+                    }
+                    mapsStream.write(carmackRaw);
+                }
+            }
+
+            for(int i = 0; i < NUMMAPS; ++i)
+            {
+                FileUtil.writeInt32(headStream, position);
+                position += MAP_HEADER_SIZE;
+
+                FileUtil.writeInt32(mapsStream, headers[i].planeStart[0]);
+                FileUtil.writeInt32(mapsStream, headers[i].planeStart[1]);
+                FileUtil.writeInt32(mapsStream, headers[i].planeStart[2]);
+                FileUtil.writeInt16(mapsStream, headers[i].planeLength[0]);
+                FileUtil.writeInt16(mapsStream, headers[i].planeLength[1]);
+                FileUtil.writeInt16(mapsStream, headers[i].planeLength[2]);
+                FileUtil.writeInt16(mapsStream, 64);
+                FileUtil.writeInt16(mapsStream, 64);
+                byte[] levelNameBytes = mLevelNames[i].getBytes("UTF-8");
+                for(int j = 0; i < LEVEL_NAME_LENGTH; ++i)
+                {
+                    mapsStream.write(j < levelNameBytes.length ? levelNameBytes[j] : 0);
+                }
+            }
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+        finally
+        {
+            FileUtil.close(headStream);
+            FileUtil.close(mapsStream);
+        }
+        return true;
     }
 
     private class MapHeader

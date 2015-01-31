@@ -127,9 +127,13 @@ public class Compression {
     // Compression
     //
 
-    public static ArrayList<Short> rlewCompress(short[] source, short rlewTag)
+    public static ArrayList<Short> rlewCompress(short[] source, short rlewTag, int prefixPad)
     {
         ArrayList<Short> dest = new ArrayList<>(source.length);
+        for(int i = 0; i < prefixPad; ++i)
+        {
+            dest.add((short)0);
+        }
 
         short value, count, i;
 
@@ -162,9 +166,15 @@ public class Compression {
         return dest;
     }
 
-    ArrayList<Byte> carmackCompress(ArrayList<Short> source)
+    public static ArrayList<Byte> carmackCompress(ArrayList<Short> source, int prefixPad)
     {
         ArrayList<Byte> out = new ArrayList<>(2 * source.size());
+
+        for(int i = 0; i < prefixPad; ++i)
+        {
+            out.add((byte)0);
+        }
+
         int outshort;
 
         int instart = 0;
