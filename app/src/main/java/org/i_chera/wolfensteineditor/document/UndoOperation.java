@@ -31,7 +31,7 @@ public class UndoOperation implements Parcelable, DefinedSizeObject
     public static final int SET_TILE = 0;
 
     // Important: array must match values in opcode types above
-    private static String[] sSignature = new String[]
+    private static final String[] sSignature = new String[]
             {
                     "iiis", // SET_TILE
             };
