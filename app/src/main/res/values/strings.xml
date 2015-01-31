@@ -37,7 +37,7 @@
     <string name="exit_question">Exit the Wolfenstein Editor?</string>
     <string name="dismiss">Dismiss</string>
 
-    <string name="close">Close</string>
+    <string name="close_document">Close Document</string>
     <string name="close_document_question">Close this document and return to start menu?</string>
     <string name="do_not_close">Don\'t Close</string>
 </resources>

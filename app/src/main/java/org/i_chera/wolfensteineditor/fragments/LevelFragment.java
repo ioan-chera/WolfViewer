@@ -887,8 +887,8 @@ public class LevelFragment extends Fragment implements
 
         // Nothing to undo
         final MainActivity activity = (MainActivity)getActivity();
-        activity.showConfirmAlert(getString(R.string.close), getString(R.string.close_document_question),
-                getString(R.string.close), getString(R.string.do_not_close), new Runnable()
+        activity.showConfirmAlert(getString(R.string.close_document), getString(R.string.close_document_question),
+                getString(R.string.close_document), getString(R.string.do_not_close), new Runnable()
         {
             @Override
             public void run()
