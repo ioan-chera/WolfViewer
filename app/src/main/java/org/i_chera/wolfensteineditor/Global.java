@@ -20,6 +20,8 @@ package org.i_chera.wolfensteineditor;
 
 import android.util.SparseIntArray;
 
+import java.nio.charset.Charset;
+
 public class Global
 {
     private static final String[] sWolfFileNames =
@@ -183,5 +185,18 @@ public class Global
     public static boolean inBounds(int val, int min, int max)
     {
         return val >= min && val <= max;
+    }
+
+    public static String nullTerminatedString(byte[] data)
+    {
+        int length;
+        for(length = 0; length < data.length; ++length)
+        {
+            if(data[length] == 0)
+                break;
+        }
+        if(length == 0)
+            return "";
+        return new String(data, 0, length, Charset.forName("UTF-8"));
     }
 }

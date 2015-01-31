@@ -23,6 +23,7 @@ import android.util.Log;
 import org.i_chera.wolfensteineditor.Compression;
 import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.FileUtil;
+import org.i_chera.wolfensteineditor.Global;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -266,7 +267,7 @@ public class LevelContainer implements DefinedSizeObject{
                 newHeader.planeLength[2] = FileUtil.readUInt16(raf);
                 raf.skipBytes(2 + 2);
                 raf.read(nameBuffer);
-                newLevelNames[i] = new String(nameBuffer, "UTF-8");
+                newLevelNames[i] = Global.nullTerminatedString(nameBuffer);
 
                 newLevels[i] = cacheMap(raf, newHeader, newRlewTag);
                 if(newLevels[i] == null)
