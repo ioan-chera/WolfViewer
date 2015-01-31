@@ -22,6 +22,7 @@ import android.content.Context;
 import android.util.Log;
 
 import org.i_chera.wolfensteineditor.DefinedSizeObject;
+import org.i_chera.wolfensteineditor.FileUtil;
 import org.i_chera.wolfensteineditor.ProgressCallback;
 import org.i_chera.wolfensteineditor.R;
 
@@ -90,9 +91,13 @@ public class Document implements DefinedSizeObject
         if(!directory.isDirectory())
             return false;
 
+        int max = 4;
+        if(autoload)
+            max = 5;
+
         // First check if files exist
         if(progressUpdater != null)
-            progressUpdater.onProgress(1, 4, context.getString(R.string.checking_for_files));
+            progressUpdater.onProgress(1, max, context.getString(R.string.checking_for_files));
         File vSwapFile = new File(directory, "vswap.wl6");
         if(!vSwapFile.exists())
         {
@@ -114,7 +119,7 @@ public class Document implements DefinedSizeObject
 
         // Try loading vswap container
         if(progressUpdater != null)
-            progressUpdater.onProgress(2, 4, context.getString(R.string.loading_vswap_file));
+            progressUpdater.onProgress(2, max, context.getString(R.string.loading_vswap_file));
         VSwapContainer vswap = new VSwapContainer();
         if(!vswap.loadFile(vSwapFile))
         {
@@ -124,12 +129,28 @@ public class Document implements DefinedSizeObject
 
         // Try loading level container
         if(progressUpdater != null)
-            progressUpdater.onProgress(3, 4, context.getString(R.string.loading_maphead_gamemaps));
+            progressUpdater.onProgress(3, max, context.getString(R.string.loading_maphead_gamemaps));
         LevelContainer levels = new LevelContainer();
         if(!levels.loadFile(mapHeadFile, gameMapsFile))
         {
             Log.e("Document", "Couldn't load levels");
             return false;
+        }
+        if(autoload)
+        {
+            if(progressUpdater != null)
+                progressUpdater.onProgress(4, max, context.getString(R.string.loading_current_state));
+            File undoFile = new File(directory, "undo");
+            File redoFile = new File(directory, "redo");
+            if(!undoFile.exists())
+                undoFile = null;
+            if(!redoFile.exists())
+                redoFile = null;
+            if((undoFile != null || redoFile != null) && !levels.loadUndoRedo(undoFile, redoFile))
+            {
+                Log.e("Document", "Couldn't load undo/redo");
+                return false;
+            }
         }
 
         // Success
@@ -142,24 +163,43 @@ public class Document implements DefinedSizeObject
     public boolean autosave(Context context, ProgressCallback progressUpdater)
     {
         if(progressUpdater != null)
-            progressUpdater.onProgress(1, 4, context.getString(R.string.autosaving));
+            progressUpdater.onProgress(1, 5, context.getString(R.string.autosaving));
         File directory = new File(context.getFilesDir(), AUTOSAVE_DIRECTORY);
         if(!directory.mkdir() && !directory.isDirectory())
+        {
+            FileUtil.deleteRecursively(directory);
             return false;
+        }
 
         File vSwapFile = new File(directory, "vswap.wl6");
         File mapHeadFile = new File(directory, "maphead.wl6");
         File gameMapsFile = new File(directory, "gamemaps.wl6");
+        File undoFile = new File(directory, "undo");
+        File redoFile = new File(directory, "redo");
 
         if(progressUpdater != null)
-            progressUpdater.onProgress(2, 4, context.getString(R.string.saving_vswap_file));
+            progressUpdater.onProgress(2, 5, context.getString(R.string.saving_vswap_file));
         if(!mVSwap.writeFile(vSwapFile))
+        {
+            FileUtil.deleteRecursively(directory);
             return false;
+        }
 
         if(progressUpdater != null)
-            progressUpdater.onProgress(3, 4, context.getString(R.string.saving_maphead_gamemaps));
+            progressUpdater.onProgress(3, 5, context.getString(R.string.saving_maphead_gamemaps));
         if(!mLevels.writeFile(mapHeadFile, gameMapsFile))
+        {
+            FileUtil.deleteRecursively(directory);
             return false;
+        }
+
+        if(progressUpdater != null)
+            progressUpdater.onProgress(3, 5, context.getString(R.string.saving_maphead_gamemaps));
+        if(!mLevels.writeUndoRedo(undoFile, redoFile))
+        {
+            FileUtil.deleteRecursively(directory);
+            return false;
+        }
 
         return true;
     }

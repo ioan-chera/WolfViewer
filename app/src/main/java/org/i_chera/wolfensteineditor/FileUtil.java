@@ -20,8 +20,9 @@ package org.i_chera.wolfensteineditor;
 
 import java.io.Closeable;
 import java.io.EOFException;
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 
@@ -32,7 +33,7 @@ public class FileUtil {
      * @return the read value
      * @throws IOException
      */
-    public static int readUInt16(FileInputStream fis) throws IOException
+    public static int readUInt16(InputStream fis) throws IOException
     {
         byte[] read = new byte[2];
         if(fis.read(read, 0, 2) != 2)
@@ -60,7 +61,7 @@ public class FileUtil {
      * @return the read value
      * @throws IOException
      */
-    public static int readInt32(FileInputStream fis) throws IOException
+    public static int readInt32(InputStream fis) throws IOException
     {
         byte[] read = new byte[4];
         if(fis.read(read, 0, 4) != 4)
@@ -105,5 +106,16 @@ public class FileUtil {
                 e.printStackTrace();
             }
         }
+    }
+
+    public static boolean deleteRecursively(File file)
+    {
+        File[] subfiles = file.listFiles();
+        boolean allDelete = true;
+        if(subfiles != null)
+            for (File child : subfiles)
+                allDelete &= deleteRecursively(child);
+
+        return allDelete && file.delete();
     }
 }

@@ -25,12 +25,14 @@ import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.FileUtil;
 import org.i_chera.wolfensteineditor.Global;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.lang.ref.WeakReference;
@@ -443,6 +445,90 @@ public class LevelContainer implements DefinedSizeObject{
         {
             FileUtil.close(headStream);
             FileUtil.close(mapsStream);
+        }
+        return true;
+    }
+
+    public boolean loadUndoRedo(File undoFile, File redoFile)
+    {
+        InputStream undoStream = null;
+        InputStream redoStream = null;
+        try
+        {
+            int num;
+            if(undoFile != null)
+            {
+                undoStream = new BufferedInputStream(new FileInputStream(undoFile));
+                for(int i = 0; i < NUMMAPS; ++i)
+                {
+                    num = FileUtil.readInt32(undoStream);
+                    for(int j = 0; j < num; ++j)
+                        mUndoStacks.get(i).push(new UndoOperation(undoStream));
+                }
+            }
+            if(redoFile != null)
+            {
+                redoStream = new BufferedInputStream(new FileInputStream(redoFile));
+                for(int i = 0; i < NUMMAPS; ++i)
+                {
+                    num = FileUtil.readInt32(redoStream);
+                    for(int j = 0; j < num; ++j)
+                        mRedoStacks.get(i).push(new UndoOperation(redoStream));
+                }
+            }
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+        finally
+        {
+            FileUtil.close(undoStream);
+            FileUtil.close(redoStream);
+        }
+        return true;
+    }
+
+    private OutputStream writeWhichStack(ArrayList<Stack<UndoOperation>> stacks, File file) throws IOException
+    {
+        OutputStream stream = null;
+        if(stacks != null && stacks.size() > 0)
+        {
+            stream = new BufferedOutputStream(new FileOutputStream(file));
+            for(Stack<UndoOperation> stack : stacks)
+            {
+                FileUtil.writeInt32(stream, stack != null ? stack.size() : 0);
+                if(stack != null && stack.size() > 0)
+                {
+                    for(UndoOperation operation : stack)
+                    {
+                        stream.write(operation.getByteRepresentation());
+                    }
+                }
+            }
+        }
+        return stream;
+    }
+
+    public boolean writeUndoRedo(File undoFile, File redoFile)
+    {
+        OutputStream undoStream = null;
+        OutputStream redoStream = null;
+        try
+        {
+            undoStream = writeWhichStack(mUndoStacks, undoFile);
+            redoStream = writeWhichStack(mRedoStacks, redoFile);
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+        finally
+        {
+            FileUtil.close(undoStream);
+            FileUtil.close(redoStream);
         }
         return true;
     }

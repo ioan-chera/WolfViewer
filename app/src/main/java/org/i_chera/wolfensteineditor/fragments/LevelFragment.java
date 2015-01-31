@@ -304,7 +304,7 @@ public class LevelFragment extends Fragment implements
             Log.i(TAG, "Adding observer");
             mDocument.getLevels().addObserver(this);
         }
-        else
+        else if(mPath != null && mPath.getPath().length() > 0)
         {
             tryCancelAutoloadTask();
             mAutoloadTask = new DocumentLoadAsyncTask(getActivity().getApplicationContext(), this, mPath,

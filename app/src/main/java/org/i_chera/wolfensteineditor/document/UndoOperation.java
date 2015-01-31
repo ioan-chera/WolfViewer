@@ -22,7 +22,10 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import org.i_chera.wolfensteineditor.DefinedSizeObject;
+import org.i_chera.wolfensteineditor.FileUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 public class UndoOperation implements Parcelable, DefinedSizeObject
@@ -76,6 +79,29 @@ public class UndoOperation implements Parcelable, DefinedSizeObject
         }
     }
 
+    public UndoOperation(InputStream stream) throws IOException
+    {
+        mOpcode = FileUtil.readInt32(stream);
+        mArguments = new ArrayList<>(5);
+        char c;
+        for(int i = 0; i < sSignature[mOpcode].length(); ++i)
+        {
+            c = sSignature[mOpcode].charAt(i);
+            switch(c)
+            {
+                case 'i':
+                    mArguments.add(FileUtil.readInt32(stream));
+                    break;
+                case 's':
+                    mArguments.add((short)FileUtil.readUInt16(stream));
+                    break;
+                default:
+                    throw new IllegalArgumentException("Bad signature " + sSignature[mOpcode]
+                            + " for opcode " + mOpcode);
+            }
+        }
+    }
+
     public void executeForLevels(LevelContainer levels)
     {
         switch(mOpcode)
@@ -111,6 +137,43 @@ public class UndoOperation implements Parcelable, DefinedSizeObject
             }
         }
         return size;
+    }
+
+    public byte[] getByteRepresentation()
+    {
+        byte[] ret = new byte[getSizeInBytes()];
+        ret[0] = (byte)mOpcode;
+        ret[1] = (byte)(mOpcode >>> 8);
+        ret[2] = (byte)(mOpcode >>> 16);
+        ret[3] = (byte)(mOpcode >>> 24);
+
+        char c;
+        int index = 4;
+        int intRep;
+        short shortRep;
+        for(int i = 0; i < sSignature[mOpcode].length(); ++i)
+        {
+            c = sSignature[mOpcode].charAt(i);
+            switch(c)
+            {
+                case 'i':
+                    intRep = (int)mArguments.get(i);
+                    ret[index++] = (byte)intRep;
+                    ret[index++] = (byte)(intRep >>> 8);
+                    ret[index++] = (byte)(intRep >>> 16);
+                    ret[index++] = (byte)(intRep >>> 24);
+                    break;
+                case 's':
+                    shortRep = (short)mArguments.get(i);
+                    ret[index++] = (byte)shortRep;
+                    ret[index++] = (byte)(shortRep >>> 8);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Bad signature " + sSignature[mOpcode]
+                            + " for opcode " + mOpcode);
+            }
+        }
+        return ret;
     }
 
     ///////////////////////////////////////////////////////////////////////////
