@@ -127,11 +127,10 @@ public class Compression {
     // Compression
     //
 
-    public static byte[] rlewCompressShortToByte(short[] source, short rlewTag)
+    public static ArrayList<Short> rlewCompress(short[] source, short rlewTag)
     {
-        ArrayList<Byte> destList = new ArrayList<>(source.length * 2);
+        ArrayList<Short> dest = new ArrayList<>(source.length);
 
-        int compLength;
         short value, count, i;
 
         int sourceIndex = 0;
@@ -147,41 +146,108 @@ public class Compression {
             }
             if(count > 3 || value == rlewTag)
             {
-                destList.add((byte)(rlewTag & 0xff));
-                destList.add((byte)((rlewTag >>> 8) & 0xff));
-                destList.add((byte)(count & 0xff));
-                destList.add((byte)((count >>> 8) & 0xff));
-                destList.add((byte)(value & 0xff));
-                destList.add((byte)((value >>> 8) & 0xff));
+                dest.add(rlewTag);
+                dest.add(count);
+                dest.add(value);
             }
             else
             {
                 for(i = 1; i <= count; ++i)
                 {
-                    destList.add((byte)(value & 0xff));
-                    destList.add((byte)((value >>> 8) & 0xff));
+                    dest.add(value);
                 }
             }
         }while(sourceIndex < source.length);
 
-        byte[] ret = new byte[destList.size()];
-        i = 0;
-        for(byte b : destList)
-        {
-            ret[i++] = b;
-        }
-        return ret;
+        return dest;
     }
 
-    byte[] carmackCompress(byte[] source)
+    ArrayList<Byte> carmackCompress(ArrayList<Short> source)
     {
-        int instart, inptr;
-        int outptr;
-        int outlength;
+        ArrayList<Byte> out = new ArrayList<>(2 * source.size());
+        int outshort;
 
-        instart = inptr = 0;
-        outptr = 0;
-        outlength = 0;
-        
+        int instart = 0;
+        int inptr = 0;
+
+        int ch;
+        int chhigh;
+
+        int length = source.size();
+
+        int beststring;
+        int inscan;
+        int maxstring;
+        int string;
+        int bestscan = 0;
+
+        do
+        {
+            ch = source.get(inptr) & 0xffff;
+            beststring = 0;
+            for(inscan = instart; inscan < inptr; ++inscan)
+            {
+                if((source.get(inscan) & 0xffff) != ch)
+                    continue;
+
+                maxstring = inptr - inscan;
+                if(maxstring > length)
+                    maxstring = length;
+                if(maxstring > 255)
+                    maxstring = 255;
+
+                string = 1;
+                while(source.get(inscan + string).equals(source.get(inptr + string)) && string < maxstring)
+                {
+                    ++string;
+                }
+                if(string >= beststring)
+                {
+                    beststring = string;
+                    bestscan = inscan;
+                }
+            }
+            if(beststring > 1 && inptr - bestscan <= 255)
+            {
+                outshort = beststring + NEARTAG * 256;
+                out.add((byte)(outshort & 0xff));
+                out.add((byte)(outshort >>> 8));
+                out.add((byte)(inptr - bestscan));
+                inptr += beststring;
+                length -= beststring;
+            }
+            else if(beststring > 2)
+            {
+                outshort = beststring + FARTAG * 256;
+                out.add((byte)(outshort & 0xff));
+                out.add((byte)(outshort >>> 8));
+                outshort = bestscan - instart;
+                out.add((byte)(outshort & 0xff));
+                out.add((byte)(outshort >>> 8));
+                inptr += beststring;
+                length -= beststring;
+            }
+            else
+            {
+                chhigh = ch >>> 8;
+                if(chhigh == NEARTAG || chhigh == FARTAG)
+                {
+                    outshort = ch & 0xff00;
+                    out.add((byte)(outshort & 0xff));
+                    out.add((byte)(outshort >>> 8));
+                    out.add((byte)(ch & 0xff));
+                }
+                else
+                {
+                    out.add((byte)(ch & 0xff));
+                    out.add((byte)(ch >>> 8));
+                }
+                ++inptr;
+                --length;
+            }
+            if(length < 0)
+                throw new IllegalStateException("Length < 0!");
+        } while(length > 0);
+        return out;
     }
 }

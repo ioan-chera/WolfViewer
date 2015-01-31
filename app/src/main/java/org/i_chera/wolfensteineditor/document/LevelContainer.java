@@ -275,9 +275,9 @@ public class LevelContainer implements DefinedSizeObject{
             // All ok
             mLevels = newLevels;
             mLevelNames = newLevelNames;
-            mUndoStacks = new ArrayList<Stack<Runnable>>(mLevels.length);
-            mRedoStacks = new ArrayList<Stack<Runnable>>(mLevels.length);
-            for(int i = 0; i < mLevels.length; ++i)
+            mUndoStacks = new ArrayList<>(mLevels.length);
+            mRedoStacks = new ArrayList<>(mLevels.length);
+            for(short[][] level : mLevels)
             {
                 mUndoStacks.add(new Stack<Runnable>());
                 mRedoStacks.add(new Stack<Runnable>());
@@ -362,6 +362,11 @@ public class LevelContainer implements DefinedSizeObject{
             return null;
         }
         return ret;
+    }
+
+    public void writeFile(File mapHead, File gameMaps)
+    {
+
     }
 
     private class MapHeader
