@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:padding="10dp"
+    android:clickable="true"
+    android:background="@color/floor_translucent">
+    <ListView
+        android:id="@+id/drawer_menu"
+        android:layout_width="@dimen/drawer_menu_width"
+        android:layout_height="match_parent"
+        android:cacheColorHint="@android:color/transparent"/>
+    <ListView
+        android:id="@+id/wall_list"
+        android:layout_width="@dimen/button_touchable"
+        android:layout_height="match_parent"
+        android:cacheColorHint="@android:color/transparent"/>
+
+</LinearLayout>

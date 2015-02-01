@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+                                        xmlns:tools="http://schemas.android.com/tools"
+                                        android:layout_width="match_parent"
     android:layout_height="match_parent" >
     <RelativeLayout android:id="@+id/central_content"
         android:layout_width="match_parent"
@@ -45,26 +46,13 @@
             android:src="@drawable/ic_darkaction_redo"
             android:contentDescription="@string/content_description_redo"/>
     </RelativeLayout>
-    
-    <LinearLayout android:id="@+id/left_drawer"
+
+    <fragment
+        android:id="@+id/left_drawer_fragment"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:orientation="horizontal"
         android:layout_gravity="start"
-        android:padding="10dp"
-        android:clickable="true"
-        android:background="@color/floor_translucent">
-        <ListView
-            android:id="@+id/drawer_menu"
-            android:layout_width="@dimen/drawer_menu_width"
-            android:layout_height="match_parent"
-            android:cacheColorHint="@android:color/transparent"/>
-        <ListView
-            android:id="@+id/wall_list"
-            android:layout_width="@dimen/button_touchable"
-            android:layout_height="match_parent"
-            android:cacheColorHint="@android:color/transparent"/>
-
-    </LinearLayout>
+        android:name="org.i_chera.wolfensteineditor.fragments.LevelMenuFragment"
+        tools:layout="@layout/fragment_level_menu"/>
 
 </android.support.v4.widget.DrawerLayout >

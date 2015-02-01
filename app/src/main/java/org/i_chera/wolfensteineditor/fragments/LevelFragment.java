@@ -22,11 +22,11 @@ import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -38,14 +38,10 @@ import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.AbsListView;
-import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.RelativeLayout;
 
 import org.i_chera.wolfensteineditor.BackButtonHandler;
@@ -62,16 +58,10 @@ import org.i_chera.wolfensteineditor.ui.HXScrollView;
 import org.i_chera.wolfensteineditor.ui.ScrollViewListener;
 import org.i_chera.wolfensteineditor.ui.VXScrollView;
 import org.i_chera.wolfensteineditor.ui.VisibilityGrid;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 
 public class LevelFragment extends Fragment implements
-        AdapterView.OnItemClickListener,
         BackButtonHandler,
         CompoundButton.OnCheckedChangeListener,
         LevelContainer.Observer,
@@ -87,11 +77,9 @@ public class LevelFragment extends Fragment implements
     private static final String STATE_SCROLL_X = "scrollX";
     private static final String STATE_SCROLL_Y = "scrollY";
     private static final String STATE_SCROLL_LOCK = "scrollLock";
-    private static final String STATE_CURRENT_WALL_CHOICE = "currentWallChoice";
     private static final String STATE_DRAWER_OPEN = "drawerOpen";
     public static final String ARG_PATH_NAME = "pathName";
     private int mCurrentLevel;
-    private int mCurrentWallChoice;
     private File mPath;
 
     // document
@@ -103,12 +91,12 @@ public class LevelFragment extends Fragment implements
     private RelativeLayout mGridLayout;
     private VXScrollView mVerticalScroll;
     private HXScrollView mHorizontalScroll;
-    private ListView mWallList;
     private CheckBox mScrollLockCheck;
     private RelativeLayout mCentralContent;
     private ActionBarDrawerToggle mDrawerToggle;
     private ImageView mUndoButton;
     private ImageView mRedoButton;
+    private LevelMenuFragment mMenuFragment;
 
     // display
     private int mTileSize;
@@ -116,14 +104,16 @@ public class LevelFragment extends Fragment implements
     private Point mViewportSize;
     private VisibilityGrid mVisGrid;
 
-    // other data
-    private JSONArray mWallChoices;
-
     // Item click control
     private boolean mPressDown;
 
     // Drawer
     private DrawerLayout mDrawerLayout;
+
+    boolean isDocumentLoaded()
+    {
+        return mDocument != null && mDocument.isLoaded();
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -185,16 +175,16 @@ public class LevelFragment extends Fragment implements
 
         // Static data
         mTileSize = (int)(48 * ((MainActivity)getActivity()).getPixelScale());
-        readWallChoices();
 
         mGridLayout = (RelativeLayout)v.findViewById(R.id.grid_layout);
         mVerticalScroll = (VXScrollView)v.findViewById(R.id.vertical_scroll);
         mHorizontalScroll = (HXScrollView)v.findViewById(R.id.horizontal_scroll);
-        mWallList = (ListView)v.findViewById(R.id.wall_list);
         mScrollLockCheck = (CheckBox)v.findViewById(R.id.scroll_lock_check);
         mCentralContent = (RelativeLayout)v.findViewById(R.id.central_content);
         mUndoButton = (ImageView)v.findViewById(R.id.button_undo);
         mRedoButton = (ImageView)v.findViewById(R.id.button_redo);
+
+        mMenuFragment = (LevelMenuFragment)getChildFragmentManager().findFragmentById(R.id.left_drawer_fragment);
 
         mHorizontalScroll.setScrollingEnabled(false);
         mHorizontalScroll.setOnTouchListener(this);
@@ -209,9 +199,6 @@ public class LevelFragment extends Fragment implements
         mScrollLockCheck.setOnCheckedChangeListener(this);
         mUndoButton.setOnClickListener(this);
         mRedoButton.setOnClickListener(this);
-
-        mWallList.setAdapter(new WallListAdapter());
-        mWallList.setOnItemClickListener(this);
 
         mGridLayout.getLayoutParams().width =
                 mGridLayout.getLayoutParams().height = LevelContainer.MAPSIZE *
@@ -235,7 +222,6 @@ public class LevelFragment extends Fragment implements
                 {
                     mHorizontalScroll.scrollTo(savedInstanceState.getInt(STATE_SCROLL_X), 0);
                     mVerticalScroll.scrollTo(0, savedInstanceState.getInt(STATE_SCROLL_Y));
-                    mCurrentWallChoice = savedInstanceState.getInt(STATE_CURRENT_WALL_CHOICE);
                     boolean checked = savedInstanceState.getBoolean(STATE_SCROLL_LOCK);
                     mScrollLockCheck.setChecked(checked);
                     if(savedInstanceState.getBoolean(STATE_DRAWER_OPEN))
@@ -282,7 +268,6 @@ public class LevelFragment extends Fragment implements
         target.putInt(STATE_CURRENT_LEVEL, mCurrentLevel);
         target.putInt(STATE_SCROLL_X, mHorizontalScroll.getScrollX());
         target.putInt(STATE_SCROLL_Y, mVerticalScroll.getScrollY());
-        target.putInt(STATE_CURRENT_WALL_CHOICE, mCurrentWallChoice);
         target.putBoolean(STATE_SCROLL_LOCK, mScrollLockCheck.isChecked());
         target.putBoolean(STATE_DRAWER_OPEN, mDrawerLayout.isDrawerOpen(Gravity.START));
         if(mDocument != null) {
@@ -423,7 +408,7 @@ public class LevelFragment extends Fragment implements
         if(mGridLayout == null)
             return;	// will be done anyway upon creation
         updateGridLayout();
-        ((WallListAdapter)mWallList.getAdapter()).notifyDataSetChanged();
+        mMenuFragment.updateWallList();
     }
 
     private void updateGridLayout()
@@ -686,7 +671,7 @@ public class LevelFragment extends Fragment implements
 
         int cell = mDocument.getLevels().getTile(mCurrentLevel, 0, x, y);
 
-        if(!setBitmapFromMapValue(mDocument, iv, cell))
+        if(!setBitmapFromMapValue(iv, cell))
         {
             cell = Global.getActorSpriteMap().get(
                     mDocument.getLevels().getTile(mCurrentLevel, 1, x, y), -1);
@@ -697,7 +682,7 @@ public class LevelFragment extends Fragment implements
         }
     }
 
-    private boolean setBitmapFromMapValue(Document document, ImageView iv, int cell)
+    boolean setBitmapFromMapValue(ImageView iv, int cell)
     {
         if(cell >= 90 && cell <= 100 && cell % 2 == 0)
         {
@@ -712,129 +697,13 @@ public class LevelFragment extends Fragment implements
         else
         {
             int texture = 2 * (cell - 1);
-            if(texture >= 0 && texture < document.getVSwap().getSpriteStart())
+            if(texture >= 0 && texture < mDocument.getVSwap().getSpriteStart())
             {
-                iv.setImageBitmap(document.getVSwap().getWallBitmap(texture));
+                iv.setImageBitmap(mDocument.getVSwap().getWallBitmap(texture));
                 return true;
             }
         }
         return false;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // Wall list adapter
-    ////////////////////////////////////////////////////////////////////////////
-
-    private class WallListAdapter extends BaseAdapter
-    {
-        @Override
-        public int getCount()
-        {
-            return mWallChoices != null ? mWallChoices.length() : 0;
-        }
-
-        @Override
-        public Object getItem(int position)
-        {
-            return mWallChoices != null ? mWallChoices.optJSONObject(position)
-                    : null;
-        }
-
-        @Override
-        public long getItemId(int position)
-        {
-            if(mWallChoices == null)
-                return -1;
-            else
-            {
-                JSONObject object = (JSONObject)getItem(position);
-                if(object != null)
-                    return object.optLong("id");
-                else
-                    return -1;
-            }
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent)
-        {
-            ImageView item;
-            if(convertView == null)
-            {
-                MainActivity activity = (MainActivity)getActivity();
-                item = new ImageView(getActivity());
-                AbsListView.LayoutParams alvlp = new AbsListView.LayoutParams(
-                        (int)(48 * activity.getPixelScale()),
-                        (int)(48 * activity.getPixelScale()));
-                item.setLayoutParams(alvlp);
-                item.setPadding(0, (int)(5 * activity.getPixelScale()),
-                        0, (int)(5 * activity.getPixelScale()));
-            }
-            else
-                item = (ImageView)convertView;
-            int index = (int)getItemId(position);
-            if(mCurrentWallChoice == position)
-                item.setBackgroundResource(R.drawable.frame_selection);
-            else
-                item.setBackgroundResource(0);
-            if(!mDocument.isLoaded() || !setBitmapFromMapValue(mDocument, item, index))
-                item.setImageDrawable(null);
-
-            return item;
-        }
-
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-
-    void readWallChoices()
-    {
-        // Called upon creation
-        InputStream is = null;
-        StringBuilder sb;
-        try
-        {
-            sb = new StringBuilder(5000);
-            is = getActivity().getAssets().open("wall_choices.json");
-
-            byte[] buffer = new byte[512];
-            while(is.read(buffer) > 0)
-                sb.append(new String(buffer, "UTF-8"));
-
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-            return;
-        }
-        finally
-        {
-            if(is != null)
-            {
-                try
-                {
-                    is.close();
-                }
-                catch(IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-        String jsonString = sb.toString();
-        JSONArray array;
-        try
-        {
-            array = new JSONArray(jsonString);
-        }
-        catch(JSONException e)
-        {
-            e.printStackTrace();
-            ((MainActivity)getActivity()).showErrorAlert("Internal error", "Failed to read the wall choice list!");
-            return;
-        }
-        mWallChoices = array;
-        mCurrentWallChoice = Global.boundValue(mCurrentWallChoice, 0, mWallChoices.length() - 1);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -852,23 +721,13 @@ public class LevelFragment extends Fragment implements
         }
         else if(v instanceof ImageView)
         {
-            if(mWallChoices == null || !Global.inBounds(mCurrentWallChoice, 0,
-                    mWallChoices.length() - 1))
-            {
-                Log.e(TAG, "Wall choices error: " + mWallChoices + " " + mCurrentWallChoice);
-                return;
-            }
-            JSONObject obj = mWallChoices.optJSONObject(mCurrentWallChoice);
-            if(obj == null)
+            int id = mMenuFragment.getChoiceId();
+            if(id == -1)
             {
                 Log.e(TAG, "Empty wall choice");
                 return;
             }
-//			Log.i(TAG, "Clicked " + v.getId() % 64 + " " + v.getId() / 64 + " real " +
-//				((RelativeLayout.LayoutParams)v.getLayoutParams()).leftMargin / v.getWidth() + " " +
-//				((RelativeLayout.LayoutParams)v.getLayoutParams()).topMargin / v.getHeight());
-            mDocument.getLevels().setTile(mCurrentLevel, 0, v.getId(),
-                    (short)obj.optInt("id"));
+            mDocument.getLevels().setTile(mCurrentLevel, 0, v.getId(), (short)id);
         }
     }
 
@@ -892,16 +751,6 @@ public class LevelFragment extends Fragment implements
                     mViewportSize.x / 2, 0);
             mVerticalScroll.smoothScrollTo(0, y * mTileSize -
                     mViewportSize.y / 2);
-        }
-    }
-
-    @Override
-    public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3)
-    {
-        if(arg0 == mWallList)
-        {
-            mCurrentWallChoice = arg2;
-            ((WallListAdapter)mWallList.getAdapter()).notifyDataSetChanged();
         }
     }
 
