@@ -39,7 +39,8 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Stack;
 
-public class LevelContainer implements DefinedSizeObject{
+public class LevelContainer implements DefinedSizeObject
+{
     public static final int NUMMAPS = 60;
     public static final int MAPPLANES = 2;
     public static final int MAPSIZE = 64;
@@ -71,10 +72,14 @@ public class LevelContainer implements DefinedSizeObject{
     public synchronized int getSizeInBytes()
     {
         int size = 0;
-        if(mLevels != null) {
-            for (short[][] level : mLevels) {
-                if (level != null) {
-                    for (short[] layer : level) {
+        if(mLevels != null)
+        {
+            for (short[][] level : mLevels)
+            {
+                if (level != null)
+                {
+                    for (short[] layer : level)
+                    {
                         if (layer != null)
                             size += 2 * layer.length;
                     }
@@ -82,8 +87,10 @@ public class LevelContainer implements DefinedSizeObject{
             }
         }
 
-        if(mLevelNames != null) {
-            for (String levelName : mLevelNames) {
+        if(mLevelNames != null)
+        {
+            for (String levelName : mLevelNames)
+            {
                 size += levelName.length();
             }
         }
@@ -370,7 +377,7 @@ public class LevelContainer implements DefinedSizeObject{
         return ret;
     }
 
-    public synchronized boolean writeFile(File mapHead, File gameMaps)
+    public boolean writeFile(File mapHead, File gameMaps)
     {
         // TODO: make the writing atomic. Also delete the temporary files if an error occurs
         OutputStream headStream = null;
@@ -397,9 +404,18 @@ public class LevelContainer implements DefinedSizeObject{
                 headers[i] = new MapHeader();
                 for(int j = 0; j < MAPPLANES; ++j)
                 {
-                    short[] plane = mLevels[i][j];
-                    rlew = Compression.rlewCompress(plane, (short)OUTPUT_RLEW_TAG, 1);
-                    rlew.set(0, (short)(plane.length * 2));
+                    synchronized(this)
+                    {
+                        // Check if something drastic happened during non-synchronization...
+                        if(mLevels == null || mLevels[i] == null || mLevels[i][j] == null)
+                        {
+                            Log.e("LevelContainer", "Level array was tampered with during saving; exiting");
+                            return false;
+                        }
+                        short[] plane = mLevels[i][j];
+                        rlew = Compression.rlewCompress(plane, (short)OUTPUT_RLEW_TAG, 1);
+                        rlew.set(0, (short)(plane.length * 2));
+                    }
                     carmack = Compression.carmackCompress(rlew, 2);
                     carmack.set(0, (byte)((2 * rlew.size()) & 0xff));
                     carmack.set(1, (byte)((2 * rlew.size()) >>> 8));
