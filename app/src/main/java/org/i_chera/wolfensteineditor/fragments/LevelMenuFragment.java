@@ -10,6 +10,7 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import org.i_chera.wolfensteineditor.Global;
 import org.i_chera.wolfensteineditor.MainActivity;
@@ -25,6 +26,11 @@ public class LevelMenuFragment extends Fragment
 {
     private static final String STATE_CURRENT_WALL_CHOICE = "currentWallChoice";
 
+    private static MenuItem[] sMenuItems = new MenuItem[] {
+            new MenuItem(R.drawable.ic_action_save, R.string.save),
+            new MenuItem(R.drawable.ic_action_cancel, R.string.close)
+    };
+
     // state
     private int mCurrentWallChoice;
 
@@ -37,6 +43,7 @@ public class LevelMenuFragment extends Fragment
     {
         View v = inflater.inflate(R.layout.fragment_level_menu, container, false);
 
+        ListView drawerMenu = (ListView)v.findViewById(R.id.drawer_menu);
         mWallList = (ListView)v.findViewById(R.id.wall_list);
 
         readWallChoices();
@@ -45,6 +52,8 @@ public class LevelMenuFragment extends Fragment
         {
             mCurrentWallChoice = savedInstanceState.getInt(STATE_CURRENT_WALL_CHOICE);
         }
+
+        drawerMenu.setAdapter(new MenuAdapter());
 
         mWallList.setAdapter(new WallListAdapter());
         mWallList.setOnItemClickListener(new AdapterView.OnItemClickListener()
@@ -133,6 +142,65 @@ public class LevelMenuFragment extends Fragment
         mCurrentWallChoice = Global.boundValue(mCurrentWallChoice, 0, mWallChoices.length() - 1);
     }
 
+    private static class MenuItem
+    {
+        final long drawableId;
+        final long textId;
+
+        MenuItem(long drawableId, long textId)
+        {
+            this.drawableId = drawableId;
+            this.textId = textId;
+        }
+    }
+
+    private class MenuAdapter extends BaseAdapter
+    {
+
+        @Override
+        public int getCount()
+        {
+            return sMenuItems.length;
+        }
+
+        @Override
+        public Object getItem(int position)
+        {
+            return sMenuItems[position];
+        }
+
+        @Override
+        public long getItemId(int position)
+        {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent)
+        {
+            if(convertView == null)
+            {
+                convertView = getActivity().getLayoutInflater().inflate(R.layout.drawer_list_item, parent, false);
+
+                int touchableSize = (int)getActivity().getResources().getDimension(R.dimen.button_touchable);
+
+                AbsListView.LayoutParams alvlp = new AbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                        touchableSize);
+                convertView.setLayoutParams(alvlp);
+            }
+
+            TextView textView = (TextView)convertView;
+
+            MenuItem item = (MenuItem)getItem(position);
+
+            if(item.drawableId > 0)
+                textView.setCompoundDrawablesWithIntrinsicBounds((int)item.drawableId, 0, 0, 0);
+            textView.setText((int)item.textId);
+
+            return convertView;
+        }
+    }
+
     private class WallListAdapter extends BaseAdapter
     {
 
@@ -169,14 +237,15 @@ public class LevelMenuFragment extends Fragment
             ImageView item;
             if(convertView == null)
             {
-                MainActivity activity = (MainActivity)getActivity();
                 item = new ImageView(getActivity());
-                AbsListView.LayoutParams alvlp = new AbsListView.LayoutParams(
-                        (int)(48 * activity.getPixelScale()),
-                        (int)(48 * activity.getPixelScale()));
+
+                int touchableSize = (int)getActivity().getResources().getDimension(R.dimen.button_touchable);
+                int padding = (int)getActivity().getResources().getDimension(R.dimen.drawer_wall_item_padding);
+
+                AbsListView.LayoutParams alvlp = new AbsListView.LayoutParams(touchableSize, touchableSize);
                 item.setLayoutParams(alvlp);
-                item.setPadding(0, (int)(5 * activity.getPixelScale()),
-                        0, (int)(5 * activity.getPixelScale()));
+                item.setPadding(0, padding, 0, padding);
+
             }
             else
                 item = (ImageView)convertView;

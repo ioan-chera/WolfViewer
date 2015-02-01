@@ -8,6 +8,8 @@
     <dimen name="standard_space">20dp</dimen>
     <dimen name="drawer_menu_width">128dp</dimen>
 
-    <dimen name="drawer_menu_item_padding">8dp</dimen>
+    <dimen name="drawer_padding">10dp</dimen>
+    <dimen name="drawer_wall_item_padding">5dp</dimen>
+    <dimen name="drawer_menu_item_padding">5dp</dimen>
     <dimen name="drawer_menu_item_drawable_padding">8dp</dimen>
 </resources>
