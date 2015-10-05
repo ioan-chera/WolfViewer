@@ -183,4 +183,14 @@ public class MainActivity extends ActionBarActivity
                     }
                 }).show();
     }
+
+    public void onAlertYes(String tag)
+    {
+
+    }
+
+    public void onAlertNo(String tag)
+    {
+
+    }
 }

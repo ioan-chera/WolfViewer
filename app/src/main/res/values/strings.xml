@@ -44,6 +44,11 @@
     <string name="close_document_question">Close this document and return to start menu?</string>
     <string name="do_not_close">Don\'t Close</string>
 
+    <string name="save_changed_question">Save changes before exiting?</string>
+
+    <string name="internal_error">Internal Error</string>
+    <string name="failed_reading_choice_list">"Failed to read the wall choice list!"</string>
+
     <string name="level_load_error">Level Load Error</string>
     <string name="could_not_open_data">Couldn\'t open data from directory </string>
 

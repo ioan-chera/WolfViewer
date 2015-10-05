@@ -18,6 +18,8 @@ package org.i_chera.wolfensteineditor.fragments;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -777,6 +779,50 @@ public class LevelFragment extends Fragment implements
         }
         return false;
     }
+
+    void closeDocumentAndExit()
+    {
+        // Close immediately if no changes are made
+        final MainActivity activity = (MainActivity)getActivity();
+        if(mDocument == null || !mDocument.isLoaded())
+        {
+            activity.popFragment();
+            return;
+        }
+
+        boolean dirty = false;
+        for(int i = 0; i < LevelContainer.NUMMAPS; ++i)
+        {
+            if(mDocument.getLevels().hasUndo(i))
+            {
+                dirty = true;
+                break;
+            }
+        }
+
+        if(dirty)
+        {
+            new AlertDialog.Builder(activity)
+                    .setTitle(R.string.close_document)
+                    .setMessage(R.string.save_changed_question)
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener()
+                    {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which)
+                        {
+                            // TODO: save changes, then exit, asynchronously
+                        }
+                    }).setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener()
+            {
+                @Override
+                public void onClick(DialogInterface dialog, int which)
+                {
+                    activity.popFragment();
+                }
+            });
+        }
+    }
+
 
     @Override
     public boolean handleBackButton()

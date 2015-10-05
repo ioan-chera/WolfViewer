@@ -26,9 +26,12 @@ public class LevelMenuFragment extends Fragment
 {
     private static final String STATE_CURRENT_WALL_CHOICE = "currentWallChoice";
 
+    private static final int COMMAND_SAVE = 0;
+    private static final int COMMAND_CLOSE = 1;
+
     private static MenuItem[] sMenuItems = new MenuItem[] {
-            new MenuItem(R.drawable.ic_action_save, R.string.save),
-            new MenuItem(R.drawable.ic_action_cancel, R.string.close)
+            new MenuItem(R.drawable.ic_action_save, R.string.save, COMMAND_SAVE),
+            new MenuItem(R.drawable.ic_action_cancel, R.string.close, COMMAND_CLOSE)
     };
 
     // state
@@ -54,6 +57,14 @@ public class LevelMenuFragment extends Fragment
         }
 
         drawerMenu.setAdapter(new MenuAdapter());
+        drawerMenu.setOnItemClickListener(new AdapterView.OnItemClickListener()
+        {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id)
+            {
+                runMenuCommand(sMenuItems[position].command);
+            }
+        });
 
         mWallList.setAdapter(new WallListAdapter());
         mWallList.setOnItemClickListener(new AdapterView.OnItemClickListener()
@@ -135,22 +146,39 @@ public class LevelMenuFragment extends Fragment
         catch(JSONException e)
         {
             e.printStackTrace();
-            ((MainActivity)getActivity()).showErrorAlert("Internal error", "Failed to read the wall choice list!");
+            ((MainActivity)getActivity()).showErrorAlert(getString(R.string.internal_error), getString(R.string.failed_reading_choice_list));
             return;
         }
         mWallChoices = array;
         mCurrentWallChoice = Global.boundValue(mCurrentWallChoice, 0, mWallChoices.length() - 1);
     }
 
+    private void runMenuCommand(int command)
+    {
+        LevelFragment fragment = (LevelFragment)getParentFragment();
+        switch(command)
+        {
+            case COMMAND_CLOSE:
+                fragment.closeDocumentAndExit();
+                break;
+            case COMMAND_SAVE:
+                break;
+            default:
+                throw new IllegalArgumentException("Wrong menu command " + command);
+        }
+    }
+
     private static class MenuItem
     {
         final long drawableId;
         final long textId;
+        final int command;
 
-        MenuItem(long drawableId, long textId)
+        MenuItem(long drawableId, long textId, int command)
         {
             this.drawableId = drawableId;
             this.textId = textId;
+            this.command = command;
         }
     }
 
