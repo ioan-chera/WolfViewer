@@ -121,9 +121,10 @@ public class MainActivity extends ActionBarActivity
     {
         // Need to pop whatever is now set
         getSupportFragmentManager().popBackStackImmediate(TAG_START_FRAGMENT, 0);
-        if(!(getTopFragment() instanceof StartFragment))
+        Fragment topFragment = getTopFragment();
+        if(!(topFragment instanceof StartFragment))
             throw new IllegalStateException("LevelFragment can only be pushed over a StartFragment; found "
-                    + getTopFragment().getClass().getName());
+                    + (topFragment != null ? topFragment.getClass().getName() : null));
 
         LevelFragment fragment = new LevelFragment();
         fragment.setDocument(document); // set it, so it doesn't have to set it again when loaded

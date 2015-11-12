@@ -1,4 +1,4 @@
-package org.i_chera.wolfensteineditor;
+package org.i_chera.wolfensteineditor.gamespecific;
 
 /*
  * Wolfenstein 3D editor for Android

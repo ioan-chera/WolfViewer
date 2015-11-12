@@ -8,3 +8,4 @@ gen
 .DS_Store
 /build
 gradle/local.properties
+.idea/runConfigurations.xml

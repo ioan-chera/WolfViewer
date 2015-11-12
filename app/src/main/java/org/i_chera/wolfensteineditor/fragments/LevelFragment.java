@@ -49,13 +49,14 @@ import android.widget.RelativeLayout;
 import org.i_chera.wolfensteineditor.BackButtonHandler;
 import org.i_chera.wolfensteineditor.Global;
 import org.i_chera.wolfensteineditor.MainActivity;
-import org.i_chera.wolfensteineditor.Palette;
+import org.i_chera.wolfensteineditor.gamespecific.Palette;
 import org.i_chera.wolfensteineditor.R;
 import org.i_chera.wolfensteineditor.StateSaver;
 import org.i_chera.wolfensteineditor.document.Document;
 import org.i_chera.wolfensteineditor.document.LevelContainer;
 import org.i_chera.wolfensteineditor.fragments.tasks.DocumentLoadAsyncTask;
 import org.i_chera.wolfensteineditor.fragments.tasks.DocumentSaveAsyncTask;
+import org.i_chera.wolfensteineditor.gamespecific.TileSet;
 import org.i_chera.wolfensteineditor.ui.HXScrollView;
 import org.i_chera.wolfensteineditor.ui.ScrollViewListener;
 import org.i_chera.wolfensteineditor.ui.VXScrollView;
@@ -672,16 +673,19 @@ public class LevelFragment extends Fragment implements
 //    	short[] actorplane = level[1];
 
         int cell = mDocument.getLevels().getTile(mCurrentLevel, 0, x, y);
+        int sprite = mDocument.getLevels().getTile(mCurrentLevel, 1, x, y);
 
-        if(!setBitmapFromMapValue(iv, cell))
-        {
-            cell = Global.getActorSpriteMap().get(
-                    mDocument.getLevels().getTile(mCurrentLevel, 1, x, y), -1);
-            if(cell == -1)
-                iv.setImageBitmap(null);
-            else
-                iv.setImageBitmap(mDocument.getVSwap().getSpriteBitmap(cell));
-        }
+        iv.setBackgroundDrawable(TileSet.imageForTile(mDocument, getResources(), cell, sprite));
+
+//        if(!setBitmapFromMapValue(iv, cell))
+//        {
+//            cell = Global.getActorSpriteMap().get(
+//                    mDocument.getLevels().getTile(mCurrentLevel, 1, x, y), -1);
+//            if(cell == -1)
+//                iv.setImageBitmap(null);
+//            else
+//                iv.setImageBitmap(mDocument.getVSwap().getSpriteBitmap(cell));
+//        }
     }
 
     boolean setBitmapFromMapValue(ImageView iv, int cell)

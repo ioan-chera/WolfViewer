@@ -28,7 +28,8 @@
         android:layout_height="match_parent"
         android:layout_below="@id/pathView"
         android:layout_above="@+id/open_button_container"
-        android:background="@drawable/dark_gradient"/>
+        android:background="@drawable/dark_gradient"
+        android:cacheColorHint="@android:color/transparent"/>
     <FrameLayout
         android:id="@id/open_button_container"
         android:layout_width="match_parent"

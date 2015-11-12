@@ -24,7 +24,7 @@ import android.util.Log;
 
 import org.i_chera.wolfensteineditor.DefinedSizeObject;
 import org.i_chera.wolfensteineditor.FileUtil;
-import org.i_chera.wolfensteineditor.Palette;
+import org.i_chera.wolfensteineditor.gamespecific.Palette;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
